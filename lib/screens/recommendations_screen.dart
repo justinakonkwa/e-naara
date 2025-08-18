@@ -220,7 +220,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                             sliver: SliverGrid(
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                childAspectRatio: 0.65,
+                                childAspectRatio: 0.72,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
                               ),

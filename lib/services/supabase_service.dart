@@ -138,6 +138,12 @@ class SupabaseService {
     }
   }
 
+
+
+
+
+
+
   /// Recherche de produits
   static Future<List<Product>> searchProducts(String query) async {
     try {
@@ -551,6 +557,8 @@ class SupabaseService {
     required double total,
     required String shippingAddress,
     required String paymentMethod,
+    double? shippingLatitude,
+    double? shippingLongitude,
   }) async {
     try {
       final user = _supabase.auth.currentUser;
@@ -567,6 +575,8 @@ class SupabaseService {
             'shipping_address': shippingAddress,
             'payment_method': paymentMethod,
             'status': 'pending',
+            'shipping_latitude': shippingLatitude,
+            'shipping_longitude': shippingLongitude,
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -685,7 +695,12 @@ class SupabaseService {
           .from(SupabaseConfig.ordersTable)
           .select('*')
           .eq('id', orderId)
-          .single();
+          .maybeSingle();
+
+      if (response == null) {
+        print('❌ [SUPABASE] Commande non trouvée: $orderId');
+        return null;
+      }
 
       final order = SimpleOrder.fromJson(response);
       print('✅ [SUPABASE] Commande trouvée: ${order.id.substring(0, 8)} - Statut: ${order.status}');
@@ -740,6 +755,32 @@ class SupabaseService {
       print('❌ [SUPABASE] Erreur lors de la confirmation de livraison: $e');
       print('❌ [SUPABASE] Détails de l\'erreur: ${e.toString()}');
       return false;
+    }
+  }
+
+  /// Debug: Lister toutes les commandes (pour diagnostic)
+  static Future<List<SimpleOrder>> debugGetAllOrders() async {
+    try {
+      print('🔍 [SUPABASE] Debug: Récupération de toutes les commandes');
+      
+      final response = await _supabase
+          .from(SupabaseConfig.ordersTable)
+          .select('*')
+          .order('created_at', ascending: false)
+          .limit(20); // Limiter à 20 commandes récentes
+
+      final orders = response.map((json) => SimpleOrder.fromJson(json)).toList();
+      print('✅ [SUPABASE] Debug: ${orders.length} commandes trouvées');
+      
+      // Afficher les détails pour debug
+      for (final order in orders) {
+        print('📦 [SUPABASE] Debug: Commande ${order.id.substring(0, 8)} - Statut: ${order.status} - Client: ${order.userId.substring(0, 8)}');
+      }
+      
+      return orders;
+    } catch (e) {
+      print('❌ [SUPABASE] Debug: Erreur lors de la récupération de toutes les commandes: $e');
+      return [];
     }
   }
 

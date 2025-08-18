@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ecommerce/services/supabase_service.dart';
 import 'package:ecommerce/models/order.dart';
 import 'package:ecommerce/screens/qr_code_display_screen.dart';
+import 'package:ecommerce/screens/order_tracking_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -260,6 +261,32 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               ),
             
             const SizedBox(height: 8),
+            
+            // Suivi de livraison (si assignée à un livreur)
+            if (order.status == 'assigned' || order.status == 'picked_up' || order.status == 'out_for_delivery')
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => OrderTrackingScreen(orderId: order.id),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.location_on),
+                  label: const Text('Suivre ma livraison'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            
+            if (order.status == 'assigned' || order.status == 'picked_up' || order.status == 'out_for_delivery')
+              const SizedBox(height: 8),
             
             // QR Code de paiement
             SizedBox(

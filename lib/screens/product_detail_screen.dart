@@ -260,7 +260,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   children: [
-                    // Image Gallery
+                    // Image Gallery principale
                     PageView.builder(
                       controller: _pageController,
                       onPageChanged: (index) {
@@ -271,51 +271,129 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       itemCount: widget.product.images.length,
                       itemBuilder: (context, index) {
                         return Container(
+                          // margin: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: Image.network(
-                            widget.product.images[index],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: theme.colorScheme.surface,
-                              child: Icon(
-                                Icons.image_not_supported,
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                                size: 80,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.network(
+                              widget.product.images[index],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: theme.colorScheme.surface,
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                  size: 80,
+                                ),
                               ),
                             ),
                           ),
                         );
                       },
                     ),
-                    // Image indicators
-                    Positioned(
-                      bottom: 20,
-                      left: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          widget.product.images.length,
-                          (index) => Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _currentImageIndex == index
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    
+                    // Miniatures en overlay à gauche
+                    if (widget.product.images.length > 1)
+                      Positioned(
+                        left: 16,
+                        top: 100, // Éviter le chevauchement avec les boutons de l'AppBar
+                        bottom: 20,
+                        child: Container(
+                          width: 60,
+                          child: ListView.builder(
+                            itemCount: widget.product.images.length,
+                            itemBuilder: (context, index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  _pageController.animateToPage(
+                                    index,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                                child: Container(
+                                  height: 50,
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _currentImageIndex == index
+                                          ? theme.colorScheme.primary
+                                          : Colors.white,
+                                      width: _currentImageIndex == index ? 2 : 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(7),
+                                    child: Image.network(
+                                      widget.product.images[index],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => Container(
+                                        color: theme.colorScheme.surface,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    
+                    // Image indicators en bas
+                    if (widget.product.images.length > 1)
+                      Positioned(
+                        bottom: 20,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            widget.product.images.length,
+                            (index) => Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _currentImageIndex == index
+                                    ? theme.colorScheme.primary
+                                    : Colors.white.withValues(alpha: 0.7),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    
+
                   ],
                 ),
               ),
             ),
+
+
 
             // Product Details
             SliverToBoxAdapter(
@@ -686,62 +764,100 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          border: Border(
-            top: BorderSide(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
-          ),
+          ],
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: widget.product.isAvailable ? _addToCart : null,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                ),
-                child: Text(
-                  widget.product.isAvailable ? 'Ajouter au panier' : 'Rupture de stock',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+        child: SafeArea(
+          child: Row(
+            children: [
+              // Bouton Ajouter au panier
+              Expanded(
+                child: Container(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: widget.product.isAvailable ? _addToCart : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.product.isAvailable 
+                          ? theme.colorScheme.primary 
+                          : theme.colorScheme.surfaceContainerHighest,
+                      foregroundColor: widget.product.isAvailable 
+                          ? theme.colorScheme.onPrimary 
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          widget.product.isAvailable ? Icons.shopping_cart_outlined : Icons.remove_shopping_cart,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.product.isAvailable ? 'Ajouter au panier' : 'Rupture de stock',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _contactSeller,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                foregroundColor: theme.colorScheme.onSurface,
-              ),
-              child: const Icon(Icons.chat_bubble_outline),
-            ),
-            const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: widget.product.isAvailable ? () {
-                _addToCart();
-                Navigator.of(context).pop();
-              } : null,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                backgroundColor: theme.colorScheme.secondary,
-                foregroundColor: theme.colorScheme.onSecondary,
-              ),
-              child: Text(
-                'Acheter maintenant',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 12),
+              // Bouton Acheter maintenant
+              Container(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: widget.product.isAvailable ? () {
+                    _addToCart();
+                    Navigator.of(context).pop();
+                  } : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.product.isAvailable 
+                        ? theme.colorScheme.secondary 
+                        : theme.colorScheme.surfaceContainerHighest,
+                    foregroundColor: widget.product.isAvailable 
+                        ? theme.colorScheme.onSecondary 
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        widget.product.isAvailable ? Icons.flash_on : Icons.flash_off,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Acheter',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

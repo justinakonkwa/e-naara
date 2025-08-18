@@ -177,3 +177,5 @@ COMMENT ON COLUMN chat_messages.type IS 'Type de message: text, image, file, ou 
 COMMENT ON COLUMN chat_messages.is_read IS 'Indique si le message a été lu par le destinataire';
 
 
+
+

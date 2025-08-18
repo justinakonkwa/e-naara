@@ -27,8 +27,10 @@ class _ProductCardState extends State<ProductCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Card(
+      elevation: 2,
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
       child: InkWell(
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(16),
@@ -40,7 +42,7 @@ class _ProductCardState extends State<ProductCard> {
             Stack(
               children: [
                 Container(
-                  height: 120,
+                  height: 170,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: const BorderRadius.vertical(
@@ -59,7 +61,8 @@ class _ProductCardState extends State<ProductCard> {
                         color: theme.colorScheme.surface,
                         child: Icon(
                           Icons.image_not_supported,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.5),
                           size: 40,
                         ),
                       ),
@@ -72,16 +75,25 @@ class _ProductCardState extends State<ProductCard> {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.error,
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.shadow.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Text(
                         '-${widget.product.discountPercentage.toInt()}%',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onError,
                           fontWeight: FontWeight.bold,
+                          fontSize: 10,
                         ),
                       ),
                     ),
@@ -95,15 +107,24 @@ class _ProductCardState extends State<ProductCard> {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface.withValues(alpha: 0.9),
+                        color: theme.colorScheme.surface.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Icon(
-                        widget.isInWishlist ? Icons.favorite : Icons.favorite_border,
-                        color: widget.isInWishlist 
-                            ? theme.colorScheme.error 
+                        widget.isInWishlist
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: widget.isInWishlist
+                            ? theme.colorScheme.error
                             : theme.colorScheme.onSurface,
-                        size: 16,
+                        size: 18,
                       ),
                     ),
                   ),
@@ -114,144 +135,176 @@ class _ProductCardState extends State<ProductCard> {
                     bottom: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface.withValues(alpha: 0.9),
+                        color: theme.colorScheme.surface.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Text(
                         'Rupture',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.error,
                           fontWeight: FontWeight.bold,
+                          fontSize: 10,
                         ),
                       ),
                     ),
                   ),
               ],
             ),
-            // Product info section with gray background
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(16),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Brand
-                  Text(
-                    widget.product.brand.isNotEmpty ? widget.product.brand : 'Marque',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            // Product info section with improved background
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: theme.brightness == Brightness.light
+                      ? theme.colorScheme.surface
+                      : theme.colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(16),
                   ),
-                  const SizedBox(height: 4),
-                  // Product name and rating in row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.product.name.isNotEmpty ? widget.product.name : 'Nom du produit',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Brand
+                    Text(
+                      widget.product.brand.isNotEmpty
+                          ? widget.product.brand
+                          : 'Marque',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
                       ),
-                      const SizedBox(width: 6),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 1),
+                    // Product name and rating in row
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.star,
-                            color: Colors.amber,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            widget.product.rating.toString(),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 10,
+                          Expanded(
+                            child: Text(
+                              widget.product.name.isNotEmpty
+                                  ? widget.product.name
+                                  : 'Nom du produit',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                          ),
+                          const SizedBox(width: 3),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 11,
+                              ),
+                              const SizedBox(width: 1),
+                              Text(
+                                widget.product.rating.toString(),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Review count and price row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '(${widget.product.reviewCount} avis)',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                      if (widget.showAddToCart && widget.product.isAvailable)
-                        GestureDetector(
-                          onTap: widget.onAddToCart,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Icon(
-                              Icons.add_shopping_cart,
-                              color: theme.colorScheme.onPrimary,
-                              size: 14,
+                    ),
+                    const SizedBox(height: 1),
+                    // Review count and add to cart row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '(${widget.product.reviewCount} avis)',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                              fontSize: 9,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  // Price
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (widget.product.isOnSale) ...[
+                        if (widget.showAddToCart && widget.product.isAvailable)
+                          GestureDetector(
+                            onTap: widget.onAddToCart,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.add_shopping_cart,
+                                color: theme.colorScheme.onPrimary,
+                                size: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 1),
+                    // Price
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              if (widget.product.isOnSale) ...[
+                                Text(
+                                  '${widget.product.originalPrice.toStringAsFixed(2)} €',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.5),
+                                    fontSize: 9,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
                               Text(
-                                '${widget.product.originalPrice.toStringAsFixed(2)} €',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                  fontSize: 10,
+                                '${widget.product.price.toStringAsFixed(2)} €',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                  fontSize: 13,
                                 ),
                               ),
-                              const SizedBox(height: 1),
                             ],
-                            Text(
-                              '${widget.product.price.toStringAsFixed(2)} €',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

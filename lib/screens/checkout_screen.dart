@@ -6,6 +6,8 @@ import 'package:ecommerce/models/order.dart';
 import 'package:ecommerce/screens/order_success_screen.dart';
 import 'package:ecommerce/screens/payment_simulation_screen.dart';
 import 'package:ecommerce/components/state_messages.dart';
+import 'package:ecommerce/widgets/address_autocomplete_widget.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -23,6 +25,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   
   String _selectedPaymentMethod = 'card';
   bool _isProcessing = false;
+  String _selectedAddress = '';
+  LatLng? _selectedPosition;
 
   @override
   void initState() {
@@ -50,6 +54,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _processOrder() async {
     if (!_formKey.currentState!.validate()) return;
     
+    // Vérifier que l'adresse a été sélectionnée
+    if (_selectedAddress.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Veuillez sélectionner une adresse de livraison'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    
     final appState = context.read<AppState>();
     if (appState.isCartEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -67,12 +83,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
 
     try {
-      final shippingAddress = '${_addressController.text}, ${_postalCodeController.text} ${_cityController.text}';
+      final shippingAddress = _selectedAddress;
       
       final order = await appState.createOrder(
         total: _calculateTotal(),
         shippingAddress: shippingAddress,
         paymentMethod: _selectedPaymentMethod,
+        shippingLatitude: _selectedPosition?.latitude,
+        shippingLongitude: _selectedPosition?.longitude,
       );
 
       if (order != null) {
@@ -241,59 +259,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               const SizedBox(height: 16),
               
-              TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Adresse *',
-                  border: OutlineInputBorder(),
-                  hintText: '123 Rue de la Paix',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'L\'adresse est requise';
-                  }
-                  return null;
+              // Widget d'autocomplétion d'adresse
+              AddressAutocompleteWidget(
+                initialValue: _selectedAddress.isNotEmpty ? _selectedAddress : null,
+                onAddressSelected: (address, position) {
+                  setState(() {
+                    _selectedAddress = address;
+                    _selectedPosition = position;
+                  });
                 },
+                hintText: 'Entrez votre adresse de livraison',
               ),
-              const SizedBox(height: 16),
               
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _postalCodeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Code postal *',
-                        border: OutlineInputBorder(),
-                        hintText: '75001',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Le code postal est requis';
-                        }
-                        return null;
-                      },
-                    ),
+              // Afficher l'adresse sélectionnée
+              if (_selectedAddress.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _cityController,
-                      decoration: const InputDecoration(
-                        labelText: 'Ville *',
-                        border: OutlineInputBorder(),
-                        hintText: 'Paris',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: theme.colorScheme.primary,
+                        size: 20,
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'La ville est requise';
-                        }
-                        return null;
-                      },
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedAddress,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
               const SizedBox(height: 16),
               
               TextFormField(

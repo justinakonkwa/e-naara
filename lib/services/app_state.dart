@@ -194,6 +194,8 @@ class AppState extends ChangeNotifier {
     required double total,
     required String shippingAddress,
     required String paymentMethod,
+    double? shippingLatitude,
+    double? shippingLongitude,
   }) async {
     try {
       _setLoading(true);
@@ -201,6 +203,8 @@ class AppState extends ChangeNotifier {
         total: total,
         shippingAddress: shippingAddress,
         paymentMethod: paymentMethod,
+        shippingLatitude: shippingLatitude,
+        shippingLongitude: shippingLongitude,
       );
       
       if (order != null) {

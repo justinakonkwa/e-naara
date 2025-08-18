@@ -121,3 +121,5 @@ SELECT
     (SELECT COUNT(DISTINCT seller_id) FROM chats) as unique_sellers;
 
 
+
+

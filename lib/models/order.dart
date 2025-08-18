@@ -166,6 +166,8 @@ class SimpleOrder {
   final DateTime? assignedAt;
   final DateTime? pickedUpAt;
   final DateTime? deliveredAt;
+  final double? shippingLatitude;
+  final double? shippingLongitude;
 
   const SimpleOrder({
     required this.id,
@@ -181,6 +183,8 @@ class SimpleOrder {
     this.assignedAt,
     this.pickedUpAt,
     this.deliveredAt,
+    this.shippingLatitude,
+    this.shippingLongitude,
   });
 
   String get statusDisplayName {
@@ -221,6 +225,8 @@ class SimpleOrder {
       assignedAt: json['assigned_at'] != null ? DateTime.parse(json['assigned_at']) : null,
       pickedUpAt: json['picked_up_at'] != null ? DateTime.parse(json['picked_up_at']) : null,
       deliveredAt: json['delivered_at'] != null ? DateTime.parse(json['delivered_at']) : null,
+      shippingLatitude: json['shipping_latitude']?.toDouble(),
+      shippingLongitude: json['shipping_longitude']?.toDouble(),
     );
   }
 
@@ -239,6 +245,8 @@ class SimpleOrder {
       'assigned_at': assignedAt?.toIso8601String(),
       'picked_up_at': pickedUpAt?.toIso8601String(),
       'delivered_at': deliveredAt?.toIso8601String(),
+      'shipping_latitude': shippingLatitude,
+      'shipping_longitude': shippingLongitude,
     };
   }
 }

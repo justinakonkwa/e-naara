@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ecommerce/services/supabase_service.dart';
 import 'package:ecommerce/models/order.dart';
 import 'package:ecommerce/screens/driver_qr_scanner_screen.dart';
+import 'package:ecommerce/screens/driver_delivery_details_screen.dart';
+import 'package:ecommerce/screens/integrated_navigation_screen.dart';
+import 'package:ecommerce/widgets/driver_tracking_widget.dart';
+import 'package:ecommerce/models/user_role.dart';
 
 class DriverDashboardScreen extends StatefulWidget {
   const DriverDashboardScreen({Key? key}) : super(key: key);
@@ -348,6 +353,21 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen>
         children: [
           // Header avec statistiques
           _buildStatsHeader(theme),
+          
+          // Widget de tracking
+          if (UserRoleManager.currentUserId != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: DriverTrackingWidget(
+                driverId: UserRoleManager.currentUserId!,
+                onTrackingStatusChanged: () {
+                  // Rafraîchir l'interface si nécessaire
+                  setState(() {});
+                },
+              ),
+            ),
+          
+          const SizedBox(height: 16),
           
           // Tabs
           Container(
@@ -750,23 +770,46 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen>
                 
                 const SizedBox(height: 16),
                 
-                // Bouton d'action
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: onAction,
-                    icon: Icon(actionIcon, size: 18),
-                    label: Text(actionText),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: actionColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
+                // Boutons d'action
+                Row(
+                  children: [
+                    // Bouton principal d'action
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onAction,
+                        icon: Icon(actionIcon, size: 18),
+                        label: Text(actionText),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: actionColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    // Bouton pour voir l'itinéraire
+                    Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: 0,
+                      child: IconButton(
+                        onPressed: () => _openIntegratedNavigation(order),
+                        icon: Icon(
+                          Icons.navigation,
+                          color: theme.colorScheme.onPrimaryContainer,
+                          size: 20,
+                        ),
+                        tooltip: 'Navigation intégrée',
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -902,5 +945,36 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen>
         ),
       ),
     );
+  }
+
+  void _showDeliveryDetails(SimpleOrder order) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DriverDeliveryDetailsScreen(orderId: order.id),
+      ),
+    );
+  }
+
+  void _openIntegratedNavigation(SimpleOrder order) {
+    if (order.shippingLatitude != null && order.shippingLongitude != null) {
+      final destination = LatLng(order.shippingLatitude!, order.shippingLongitude!);
+      
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => IntegratedNavigationScreen(
+            destination: destination,
+            destinationName: order.shippingAddress,
+            driverId: order.driverId,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Coordonnées GPS non disponibles pour cette commande'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 }
