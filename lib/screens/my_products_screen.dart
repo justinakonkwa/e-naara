@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:ecommerce/services/data_service.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:ecommerce/services/supabase_service.dart';
 import 'package:ecommerce/models/product.dart';
 import 'package:ecommerce/screens/create_product_screen.dart';
-import 'package:ecommerce/screens/edit_product_screen.dart';
+import 'package:ecommerce/screens/product_detail_screen.dart';
+import 'package:ecommerce/widgets/product_card_widget.dart';
+import 'package:ecommerce/widgets/shimmer_widgets.dart';
 
 class MyProductsScreen extends StatefulWidget {
   const MyProductsScreen({super.key});
@@ -94,6 +95,102 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     }
   }
 
+  Future<void> _toggleAvailability(Product product) async {
+    try {
+      await SupabaseService.updateProductAvailability(product.id, !product.isAvailable);
+      _loadMyProducts(); // Recharger la liste
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product.name} est maintenant ${!product.isAvailable ? 'disponible' : 'indisponible'}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la mise à jour: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateStock(Product product) async {
+    final controller = TextEditingController(text: product.stockQuantity.toString());
+    
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Modifier le stock - ${product.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Stock actuel: ${product.stockQuantity}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Nouveau stock',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              final newStock = int.tryParse(controller.text);
+              if (newStock != null && newStock >= 0) {
+                Navigator.of(context).pop(newStock);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Veuillez entrer un nombre valide'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Mettre à jour'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result != product.stockQuantity) {
+      try {
+        await SupabaseService.updateProductStock(product.id, result);
+        _loadMyProducts(); // Recharger la liste
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Stock de ${product.name} mis à jour: $result'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur lors de la mise à jour du stock: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -113,6 +210,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: "my_products_add", // Tag unique pour éviter les conflits
         onPressed: () async {
           final result = await Navigator.of(context).push(
             MaterialPageRoute(
@@ -129,7 +227,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? _buildProductsList(theme) // Affiche les shimmers pendant le chargement
           : _error != null
               ? _buildErrorState(theme)
               : _myProducts.isEmpty
@@ -230,56 +328,78 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         // Header avec statistiques
         Container(
           padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  theme,
-                  'Total',
-                  '${_myProducts.length}',
-                  Icons.inventory,
+          child: _isLoading
+              ? Row(
+                  children: [
+                    Expanded(child: _buildStatCardShimmer(theme)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildStatCardShimmer(theme)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildStatCardShimmer(theme)),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        theme,
+                        'Total',
+                        '${_myProducts.length}',
+                        Icons.inventory,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        theme,
+                        'En stock',
+                        '${_myProducts.where((p) => p.isAvailable).length}',
+                        Icons.check_circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        theme,
+                        'En vedette',
+                        '${_myProducts.where((p) => p.isFeatured).length}',
+                        Icons.star,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  theme,
-                  'En stock',
-                  '${_myProducts.where((p) => p.isAvailable).length}',
-                  Icons.check_circle,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  theme,
-                  'En vedette',
-                  '${_myProducts.where((p) => p.isFeatured).length}',
-                  Icons.star,
-                ),
-              ),
-            ],
-          ),
         ),
         
         // Liste des produits
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadMyProducts,
-            child: GridView.builder(
-              padding: const EdgeInsets.all(20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                                        childAspectRatio: 0.72,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: _myProducts.length,
-              itemBuilder: (context, index) {
-                final product = _myProducts[index];
-                return _buildProductCard(theme, product);
-              },
-            ),
+            child: _isLoading
+                ? GridView.builder(
+                    padding: const EdgeInsets.all(20),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.68,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemCount: 6,
+                    itemBuilder: (context, index) => const ProductCardShimmer(),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(20),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.68, // Même ratio que les autres écrans
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
+                    itemCount: _myProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = _myProducts[index];
+                      return _buildProductCard(theme, product);
+                    },
+                  ),
           ),
         ),
       ],
@@ -321,107 +441,86 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     );
   }
 
-  Widget _buildProductCard(ThemeData theme, Product product) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+  Widget _buildStatCardShimmer(ThemeData theme) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              width: 60,
+              height: 12,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        children: [
-          // Image du produit
-          Expanded(
-            flex: 3,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-              child: Image.network(
-                product.imageUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: theme.colorScheme.surface,
-                  child: Icon(
-                    Icons.image_not_supported,
-                    color: theme.colorScheme.outline.withValues(alpha: 0.5),
-                    size: 40,
-                  ),
-                ),
-              ),
-            ),
+    );
+  }
+
+  Widget _buildProductCard(ThemeData theme, Product product) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ProductDetailScreen(product: product),
           ),
-          
-          // Informations du produit
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${product.price.toStringAsFixed(2)} €',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  
-                  // Actions
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () async {
-                              final result = await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => EditProductScreen(
-                                    product: product,
-                                  ),
-                                ),
-                              );
-                              if (result == true) {
-                                _loadMyProducts(); // Recharger la liste après modification
-                              }
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                            ),
-                            child: const Text('Modifier', style: TextStyle(fontSize: 12)),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => _deleteProduct(product),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              foregroundColor: Colors.red,
-                            ),
-                            child: const Text('Supprimer', style: TextStyle(fontSize: 12)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+        );
+      },
+      child: ProductCardWidget(
+        imageUrl: product.imageUrl,
+        title: product.name,
+        originalPrice: product.originalPrice.toStringAsFixed(2),
+        discountedPrice: product.price.toStringAsFixed(2),
+        discount: product.discountPercentage / 100,
+        rating: product.rating,
+        reviewCount: product.reviewCount,
+        isInWishlist: false, // Pas de favoris dans ma boutique
+        showAvailabilityButton: true, // Afficher le bouton de disponibilité
+        isAvailable: product.isAvailable,
+        onAddToCart: () {
+          // Action d'ajout au panier
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${product.name} ajouté au panier'),
+              behavior: SnackBarBehavior.floating,
             ),
-          ),
-        ],
+          );
+        },
+        onToggleWishlist: () {
+          // Pas utilisé dans ma boutique
+        },
+        onToggleAvailability: () => _toggleAvailability(product),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:ecommerce/services/data_service.dart';
 import 'package:ecommerce/components/category_card.dart';
 import 'package:ecommerce/components/product_card.dart';
 import 'package:ecommerce/screens/create_product_screen.dart';
+import 'package:ecommerce/widgets/shimmer_widgets.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -18,11 +19,22 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   late TabController _tabController;
   String? _selectedCategory;
   String? _selectedSubcategory;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final dataService = context.read<DataService>();
+    // Les produits sont déjà chargés dans DataService, on simule juste un délai
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -76,6 +88,76 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
   Widget _buildCategoriesTab(ThemeData theme) {
     final dataService = context.read<DataService>();
+    
+    if (_isLoading) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Search suggestion shimmer
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Rechercher des produits...',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Catégories shimmer
+            Text(
+              'Catégories',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: 6,
+                itemBuilder: (context, index) => const CategoryCardShimmer(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Sous-catégories shimmer
+            Text(
+              'Sous-catégories',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: 8,
+                itemBuilder: (context, index) => const CategoryCardShimmer(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),

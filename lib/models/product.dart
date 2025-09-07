@@ -19,6 +19,7 @@ class Product {
   final DateTime createdAt;
   final String? sellerId;
   final String? sellerName;
+  final String currency;
 
   const Product({
     required this.id,
@@ -41,11 +42,40 @@ class Product {
     required this.createdAt,
     this.sellerId,
     this.sellerName,
+    this.currency = 'USD',
   });
 
   bool get isOnSale => originalPrice > price;
   double get discountPercentage => 
       isOnSale ? ((originalPrice - price) / originalPrice * 100) : 0;
+
+  // Méthode pour formater le prix avec la devise
+  String formatPrice(double price) {
+    switch (currency) {
+      case 'USD':
+        return '\$${price.toStringAsFixed(2)}';
+      case 'EUR':
+        return '${price.toStringAsFixed(2)} €';
+      case 'CDF':
+        return '${price.toStringAsFixed(2)} FC';
+      default:
+        return '${price.toStringAsFixed(2)} \$';
+    }
+  }
+
+  // Méthode pour obtenir le symbole de la devise
+  String get currencySymbol {
+    switch (currency) {
+      case 'USD':
+        return '\$';
+      case 'EUR':
+        return '€';
+      case 'CDF':
+        return 'FC';
+      default:
+        return '\$';
+    }
+  }
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
@@ -69,6 +99,7 @@ class Product {
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
       sellerId: json['seller_id'],
       sellerName: json['seller_name'],
+      currency: json['currency'] ?? 'USD',
     );
   }
 
@@ -94,6 +125,7 @@ class Product {
       'createdAt': createdAt.toIso8601String(),
       'seller_id': sellerId,
       'seller_name': sellerName,
+      'currency': currency,
     };
   }
 }

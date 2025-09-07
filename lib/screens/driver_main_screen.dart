@@ -129,6 +129,7 @@ class _DriverMainScreenState extends State<DriverMainScreen> {
         ],
       ),
       child: FloatingActionButton.extended(
+        heroTag: "driver_main_scanner", // Tag unique pour éviter les conflits
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(

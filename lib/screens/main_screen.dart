@@ -90,123 +90,129 @@ class _MainScreenState extends State<MainScreen> {
           backgroundColor: theme.colorScheme.surface,
           indicatorColor: theme.colorScheme.primaryContainer,
           surfaceTintColor: Colors.transparent,
-          destinations: [
-            NavigationDestination(
-              icon: Icon(
-                Icons.home_outlined,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              selectedIcon: Icon(
-                Icons.home,
-                color: theme.colorScheme.primary,
-              ),
-              label: 'Accueil',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.grid_view_outlined,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              selectedIcon: Icon(
-                Icons.grid_view,
-                color: theme.colorScheme.primary,
-              ),
-              label: 'Catégories',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.chat_bubble_outline,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              selectedIcon: Icon(
-                Icons.chat_bubble,
-                color: theme.colorScheme.primary,
-              ),
-              label: 'Messages',
-            ),
-            NavigationDestination(
-              icon: Stack(
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                  if (dataService.cartItemCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.error,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '${dataService.cartItemCount}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onError,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              selectedIcon: Stack(
-                children: [
-                  Icon(
-                    Icons.shopping_cart,
-                    color: theme.colorScheme.primary,
-                  ),
-                  if (dataService.cartItemCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.error,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '${dataService.cartItemCount}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onError,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              label: 'Panier',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.person_outline,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-              selectedIcon: Icon(
-                Icons.person,
-                color: theme.colorScheme.primary,
-              ),
-              label: 'Profil',
-            ),
-          ],
+          destinations: _buildCustomerDestinations(theme, dataService),
         ),
       ),
     );
   }
+
+  List<NavigationDestination> _buildCustomerDestinations(ThemeData theme, DataService dataService) {
+    return [
+      NavigationDestination(
+        icon: Icon(
+          Icons.home_outlined,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        selectedIcon: Icon(
+          Icons.home,
+          color: theme.colorScheme.primary,
+        ),
+        label: 'Accueil',
+      ),
+      NavigationDestination(
+        icon: Icon(
+          Icons.grid_view_outlined,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        selectedIcon: Icon(
+          Icons.grid_view,
+          color: theme.colorScheme.primary,
+        ),
+        label: 'Catégories',
+      ),
+      NavigationDestination(
+        icon: Icon(
+          Icons.chat_bubble_outline,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        selectedIcon: Icon(
+          Icons.chat_bubble,
+          color: theme.colorScheme.primary,
+        ),
+        label: 'Messages',
+      ),
+      NavigationDestination(
+        icon: Stack(
+          children: [
+            Icon(
+              Icons.shopping_cart_outlined,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+            if (dataService.cartItemCount > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${dataService.cartItemCount}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onError,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        selectedIcon: Stack(
+          children: [
+            Icon(
+              Icons.shopping_cart,
+              color: theme.colorScheme.primary,
+            ),
+            if (dataService.cartItemCount > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${dataService.cartItemCount}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onError,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        label: 'Panier',
+      ),
+      NavigationDestination(
+        icon: Icon(
+          Icons.person_outline,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        selectedIcon: Icon(
+          Icons.person,
+          color: theme.colorScheme.primary,
+        ),
+        label: 'Profil',
+      ),
+    ];
+  }
+
+
 }

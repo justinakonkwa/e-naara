@@ -190,7 +190,7 @@ class _QRCodeDisplayScreenState extends State<QRCodeDisplayScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '${widget.order.totalAmount.toStringAsFixed(2)} €',
+              '\$${widget.order.totalAmount.toStringAsFixed(2)}',
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,

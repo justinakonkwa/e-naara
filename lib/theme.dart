@@ -1,52 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class LightModeColors {
-  // Warm color palette with orange/coral tones
-  static const lightPrimary = Color(0xFFFF6B35); // Vibrant warm orange
-  static const lightOnPrimary = Color(0xFFFFFFFF);
-  static const lightPrimaryContainer = Color(0xFFFFE8E0); // Light warm peach
-  static const lightOnPrimaryContainer = Color(0xFF8B2500); // Deep orange
-  static const lightSecondary = Color(0xFFD4A574); // Warm tan
-  static const lightOnSecondary = Color(0xFF000000);
-  static const lightTertiary = Color(0xFFFFA726); // Warm amber
-  static const lightOnTertiary = Color(0xFF000000);
-  static const lightError = Color(0xFFE53E3E);
-  static const lightOnError = Color(0xFFFFFFFF);
-  static const lightErrorContainer = Color(0xFFFFE8E8);
-  static const lightOnErrorContainer = Color(0xFF8B0000);
-  static const lightInversePrimary = Color(0xFFFFB3A0);
-  static const lightShadow = Color(0xFF000000);
-  static const lightSurface = Color(0xFFFFFFFE); // Pure white background
-  static const lightOnSurface = Color(0xFF1C1C1C);
-  static const lightAppBarBackground = Color(0xFFFFFFFF); // Clean white app bar
-  static const lightAccent = Color(0xFFFF8A65); // Light coral for highlights
-  static const lightCardBackground = Color(0xFFFFFFFE);
-  static const lightBorderColor = Color(0xFFE8E8E8);
+  // Light theme with better contrast
+  static const lightPrimary = Color(0xFF1A1A1A); // Very dark gray for better contrast
+  static const lightOnPrimary = Color(0xFFFFFFFF); // Pure white
+  static const lightPrimaryContainer = Color(0xFFF0F0F0); // Light gray
+  static const lightOnPrimaryContainer = Color(0xFF1A1A1A); // Very dark gray text
+  static const lightSecondary = Color(0xFF4A90E2); // Blue for secondary elements
+  static const lightOnSecondary = Color(0xFFFFFFFF); // White text
+  static const lightTertiary = Color(0xFF50C878); // Green for tertiary elements
+  static const lightOnTertiary = Color(0xFFFFFFFF); // White text
+  static const lightError = Color(0xFFE53E3E); // Red for errors
+  static const lightOnError = Color(0xFFFFFFFF); // White text
+  static const lightErrorContainer = Color(0xFFFFEBEE); // Light red background
+  static const lightOnErrorContainer = Color(0xFFE53E3E); // Red text
+  static const lightInversePrimary = Color(0xFFCCCCCC); // Light gray
+  static const lightShadow = Color(0xFF000000); // Black shadow
+  static const lightSurface = Color(0xFFFFFFFF); // Pure white background
+  static const lightOnSurface = Color(0xFF1A1A1A); // Very dark gray text for better contrast
+  static const lightAppBarBackground = Color(0xFFFFFFFF); // White app bar
+  static const lightAccent = Color(0xFF4A90E2); // Blue accent
+  static const lightCardBackground = Color(0xFFFFFFFF); // White cards
+  static const lightBorderColor = Color(0xFFE0E0E0); // Light gray borders
+  static const lightTextPrimary = Color(0xFF1A1A1A); // Very dark gray for primary text
+  static const lightTextSecondary = Color(0xFF666666); // Medium gray for secondary text
+  static const lightTextHint = Color(0xFF999999); // Light gray for hint text
 }
 
 class DarkModeColors {
-  // Dark theme with warm accents
-  static const darkPrimary = Color(0xFFFF8A65); // Light coral for dark mode
-  static const darkOnPrimary = Color(0xFF000000);
-  static const darkPrimaryContainer = Color(0xFF8B2500); // Deep orange container
-  static const darkOnPrimaryContainer = Color(0xFFFFE8E0);
-  static const darkSecondary = Color(0xFFD4A574); // Warm tan
-  static const darkOnSecondary = Color(0xFF000000);
-  static const darkTertiary = Color(0xFFFFA726); // Warm amber
-  static const darkOnTertiary = Color(0xFF000000);
-  static const darkError = Color(0xFFFF6B6B);
-  static const darkOnError = Color(0xFF000000);
-  static const darkErrorContainer = Color(0xFF8B0000);
-  static const darkOnErrorContainer = Color(0xFFFFE8E8);
-  static const darkInversePrimary = Color(0xFFFF6B35);
-  static const darkShadow = Color(0xFF000000);
-  static const darkSurface = Color(0xFF1A1A1A); // Deep muted dark surface
-  static const darkOnSurface = Color(0xFFE8E8E8);
-  static const darkAppBarBackground = Color(0xFF1F1F1F);
-  static const darkAccent = Color(0xFFFFB3A0);
-  static const darkCardBackground = Color(0xFF2A2A2A);
-  static const darkBorderColor = Color(0xFF404040);
+  // Dark theme with better contrast
+  static const darkPrimary = Color(0xFF1A1A1A); // Very dark gray for primary
+  static const darkOnPrimary = Color(0xFFFFFFFF); // White text on primary
+  static const darkPrimaryContainer = Color(0xFFF0F0F0); // Light gray container
+  static const darkOnPrimaryContainer = Color(0xFF1A1A1A); // Very dark gray text
+  static const darkSecondary = Color(0xFF4A90E2); // Blue for secondary elements
+  static const darkOnSecondary = Color(0xFFFFFFFF); // White text
+  static const darkTertiary = Color(0xFF50C878); // Green for tertiary elements
+  static const darkOnTertiary = Color(0xFFFFFFFF); // White text
+  static const darkError = Color(0xFFE53E3E); // Red for errors
+  static const darkOnError = Color(0xFFFFFFFF); // White text
+  static const darkErrorContainer = Color(0xFFFFEBEE); // Light red background
+  static const darkOnErrorContainer = Color(0xFFE53E3E); // Red text
+  static const darkInversePrimary = Color(0xFFCCCCCC); // Light gray
+  static const darkShadow = Color(0xFF000000); // Black shadow
+  static const darkSurface = Color(0xFFFFFFFF); // White background
+  static const darkOnSurface = Color(0xFF1A1A1A); // Very dark gray text for better contrast
+  static const darkAppBarBackground = Color(0xFFFFFFFF); // White app bar
+  static const darkAccent = Color(0xFF4A90E2); // Blue accent
+  static const darkCardBackground = Color(0xFFFFFFFF); // White cards
+  static const darkBorderColor = Color(0xFFE0E0E0); // Light gray borders
+  static const darkTextPrimary = Color(0xFF1A1A1A); // Very dark gray for primary text
+  static const darkTextSecondary = Color(0xFF666666); // Medium gray for secondary text
+  static const darkTextHint = Color(0xFF999999); // Light gray for hint text
 }
 
 class FontSizes {
@@ -65,6 +70,22 @@ class FontSizes {
   static const double bodyLarge = 16.0;
   static const double bodyMedium = 14.0;
   static const double bodySmall = 12.0;
+}
+
+// Helper function to create Gilroy text style
+TextStyle _gilroyTextStyle({
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  FontStyle? fontStyle,
+}) {
+  return TextStyle(
+    fontFamily: 'Gilroy',
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    fontStyle: fontStyle,
+  );
 }
 
 ThemeData get lightTheme => ThemeData(
@@ -93,7 +114,7 @@ ThemeData get lightTheme => ThemeData(
     foregroundColor: LightModeColors.lightOnSurface,
     elevation: 0,
     centerTitle: true,
-    titleTextStyle: GoogleFonts.inter(
+    titleTextStyle: _gilroyTextStyle(
       fontSize: 18,
       fontWeight: FontWeight.w600,
       color: LightModeColors.lightOnSurface,
@@ -107,7 +128,7 @@ ThemeData get lightTheme => ThemeData(
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      textStyle: GoogleFonts.inter(
+      textStyle: _gilroyTextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
@@ -144,63 +165,63 @@ ThemeData get lightTheme => ThemeData(
     ),
   ),
   textTheme: TextTheme(
-    displayLarge: GoogleFonts.inter(
+    displayLarge: _gilroyTextStyle(
       fontSize: FontSizes.displayLarge,
       fontWeight: FontWeight.normal,
     ),
-    displayMedium: GoogleFonts.inter(
+    displayMedium: _gilroyTextStyle(
       fontSize: FontSizes.displayMedium,
       fontWeight: FontWeight.normal,
     ),
-    displaySmall: GoogleFonts.inter(
+    displaySmall: _gilroyTextStyle(
       fontSize: FontSizes.displaySmall,
       fontWeight: FontWeight.w600,
     ),
-    headlineLarge: GoogleFonts.inter(
+    headlineLarge: _gilroyTextStyle(
       fontSize: FontSizes.headlineLarge,
       fontWeight: FontWeight.normal,
     ),
-    headlineMedium: GoogleFonts.inter(
+    headlineMedium: _gilroyTextStyle(
       fontSize: FontSizes.headlineMedium,
       fontWeight: FontWeight.w500,
     ),
-    headlineSmall: GoogleFonts.inter(
+    headlineSmall: _gilroyTextStyle(
       fontSize: FontSizes.headlineSmall,
       fontWeight: FontWeight.bold,
     ),
-    titleLarge: GoogleFonts.inter(
+    titleLarge: _gilroyTextStyle(
       fontSize: FontSizes.titleLarge,
       fontWeight: FontWeight.w500,
     ),
-    titleMedium: GoogleFonts.inter(
+    titleMedium: _gilroyTextStyle(
       fontSize: FontSizes.titleMedium,
       fontWeight: FontWeight.w500,
     ),
-    titleSmall: GoogleFonts.inter(
+    titleSmall: _gilroyTextStyle(
       fontSize: FontSizes.titleSmall,
       fontWeight: FontWeight.w500,
     ),
-    labelLarge: GoogleFonts.inter(
+    labelLarge: _gilroyTextStyle(
       fontSize: FontSizes.labelLarge,
       fontWeight: FontWeight.w500,
     ),
-    labelMedium: GoogleFonts.inter(
+    labelMedium: _gilroyTextStyle(
       fontSize: FontSizes.labelMedium,
       fontWeight: FontWeight.w500,
     ),
-    labelSmall: GoogleFonts.inter(
+    labelSmall: _gilroyTextStyle(
       fontSize: FontSizes.labelSmall,
       fontWeight: FontWeight.w500,
     ),
-    bodyLarge: GoogleFonts.inter(
+    bodyLarge: _gilroyTextStyle(
       fontSize: FontSizes.bodyLarge,
       fontWeight: FontWeight.normal,
     ),
-    bodyMedium: GoogleFonts.inter(
+    bodyMedium: _gilroyTextStyle(
       fontSize: FontSizes.bodyMedium,
       fontWeight: FontWeight.normal,
     ),
-    bodySmall: GoogleFonts.inter(
+    bodySmall: _gilroyTextStyle(
       fontSize: FontSizes.bodySmall,
       fontWeight: FontWeight.normal,
     ),
@@ -233,7 +254,7 @@ ThemeData get darkTheme => ThemeData(
     foregroundColor: DarkModeColors.darkOnSurface,
     elevation: 0,
     centerTitle: true,
-    titleTextStyle: GoogleFonts.inter(
+    titleTextStyle: _gilroyTextStyle(
       fontSize: 18,
       fontWeight: FontWeight.w600,
       color: DarkModeColors.darkOnSurface,
@@ -247,7 +268,7 @@ ThemeData get darkTheme => ThemeData(
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      textStyle: GoogleFonts.inter(
+      textStyle: _gilroyTextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
@@ -284,63 +305,63 @@ ThemeData get darkTheme => ThemeData(
     ),
   ),
   textTheme: TextTheme(
-    displayLarge: GoogleFonts.inter(
+    displayLarge: _gilroyTextStyle(
       fontSize: FontSizes.displayLarge,
       fontWeight: FontWeight.normal,
     ),
-    displayMedium: GoogleFonts.inter(
+    displayMedium: _gilroyTextStyle(
       fontSize: FontSizes.displayMedium,
       fontWeight: FontWeight.normal,
     ),
-    displaySmall: GoogleFonts.inter(
+    displaySmall: _gilroyTextStyle(
       fontSize: FontSizes.displaySmall,
       fontWeight: FontWeight.w600,
     ),
-    headlineLarge: GoogleFonts.inter(
+    headlineLarge: _gilroyTextStyle(
       fontSize: FontSizes.headlineLarge,
       fontWeight: FontWeight.normal,
     ),
-    headlineMedium: GoogleFonts.inter(
+    headlineMedium: _gilroyTextStyle(
       fontSize: FontSizes.headlineMedium,
       fontWeight: FontWeight.w500,
     ),
-    headlineSmall: GoogleFonts.inter(
+    headlineSmall: _gilroyTextStyle(
       fontSize: FontSizes.headlineSmall,
       fontWeight: FontWeight.bold,
     ),
-    titleLarge: GoogleFonts.inter(
+    titleLarge: _gilroyTextStyle(
       fontSize: FontSizes.titleLarge,
       fontWeight: FontWeight.w500,
     ),
-    titleMedium: GoogleFonts.inter(
+    titleMedium: _gilroyTextStyle(
       fontSize: FontSizes.titleMedium,
       fontWeight: FontWeight.w500,
     ),
-    titleSmall: GoogleFonts.inter(
+    titleSmall: _gilroyTextStyle(
       fontSize: FontSizes.titleSmall,
       fontWeight: FontWeight.w500,
     ),
-    labelLarge: GoogleFonts.inter(
+    labelLarge: _gilroyTextStyle(
       fontSize: FontSizes.labelLarge,
       fontWeight: FontWeight.w500,
     ),
-    labelMedium: GoogleFonts.inter(
+    labelMedium: _gilroyTextStyle(
       fontSize: FontSizes.labelMedium,
       fontWeight: FontWeight.w500,
     ),
-    labelSmall: GoogleFonts.inter(
+    labelSmall: _gilroyTextStyle(
       fontSize: FontSizes.labelSmall,
       fontWeight: FontWeight.w500,
     ),
-    bodyLarge: GoogleFonts.inter(
+    bodyLarge: _gilroyTextStyle(
       fontSize: FontSizes.bodyLarge,
       fontWeight: FontWeight.normal,
     ),
-    bodyMedium: GoogleFonts.inter(
+    bodyMedium: _gilroyTextStyle(
       fontSize: FontSizes.bodyMedium,
       fontWeight: FontWeight.normal,
     ),
-    bodySmall: GoogleFonts.inter(
+    bodySmall: _gilroyTextStyle(
       fontSize: FontSizes.bodySmall,
       fontWeight: FontWeight.normal,
     ),

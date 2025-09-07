@@ -6,8 +6,10 @@ class ProductCard extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onAddToCart;
   final VoidCallback? onToggleWishlist;
+  final VoidCallback? onDelete;
   final bool isInWishlist;
   final bool showAddToCart;
+  final bool showDeleteButton;
 
   const ProductCard({
     super.key,
@@ -15,8 +17,10 @@ class ProductCard extends StatefulWidget {
     this.onTap,
     this.onAddToCart,
     this.onToggleWishlist,
+    this.onDelete,
     this.isInWishlist = false,
     this.showAddToCart = true,
+    this.showDeleteButton = false,
   });
 
   @override
@@ -129,6 +133,34 @@ class _ProductCardState extends State<ProductCard> {
                     ),
                   ),
                 ),
+                // Delete button (if enabled)
+                if (widget.showDeleteButton && widget.onDelete != null)
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: widget.onDelete,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withValues(alpha: 0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Stock indicator
                 if (!widget.product.isAvailable)
                   Positioned(
@@ -280,7 +312,7 @@ class _ProductCardState extends State<ProductCard> {
                             children: [
                               if (widget.product.isOnSale) ...[
                                 Text(
-                                  '${widget.product.originalPrice.toStringAsFixed(2)} €',
+                                  widget.product.formatPrice(widget.product.originalPrice),
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     decoration: TextDecoration.lineThrough,
                                     color: theme.colorScheme.onSurface
@@ -291,7 +323,7 @@ class _ProductCardState extends State<ProductCard> {
                                 const SizedBox(width: 6),
                               ],
                               Text(
-                                '${widget.product.price.toStringAsFixed(2)} €',
+                                widget.product.formatPrice(widget.product.price),
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.primary,

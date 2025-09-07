@@ -62,4 +62,19 @@ class QRCodeService {
   static bool isValidShortCode(String shortCode, String fullOrderId) {
     return shortCode.toUpperCase() == generateShortCode(fullOrderId);
   }
+
+  /// Valide si un code peut être un code court valide
+  static bool isValidShortCodeFormat(String code) {
+    // Un code court doit faire exactement 8 caractères et contenir seulement des caractères hexadécimaux
+    if (code.length != 8) return false;
+    
+    // Vérifier que tous les caractères sont hexadécimaux (0-9, A-F, a-f)
+    final hexPattern = RegExp(r'^[0-9A-Fa-f]{8}$');
+    return hexPattern.hasMatch(code);
+  }
+
+  /// Normalise un code court (met en majuscules)
+  static String normalizeShortCode(String code) {
+    return code.toUpperCase();
+  }
 }

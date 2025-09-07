@@ -155,6 +155,8 @@ class OrderTrackingEvent {
 class SimpleOrder {
   final String id;
   final String userId;
+  final String? productId;
+  final int? quantity;
   final double totalAmount;
   final String shippingAddress;
   final String paymentMethod;
@@ -172,6 +174,8 @@ class SimpleOrder {
   const SimpleOrder({
     required this.id,
     required this.userId,
+    this.productId,
+    this.quantity,
     required this.totalAmount,
     required this.shippingAddress,
     required this.paymentMethod,
@@ -214,6 +218,8 @@ class SimpleOrder {
     return SimpleOrder(
       id: json['id'],
       userId: json['user_id'],
+      productId: json['product_id'],
+      quantity: json['quantity'],
       totalAmount: (json['total_amount'] as num).toDouble(),
       shippingAddress: json['shipping_address'],
       paymentMethod: json['payment_method'],
@@ -234,6 +240,8 @@ class SimpleOrder {
     return {
       'id': id,
       'user_id': userId,
+      'product_id': productId,
+      'quantity': quantity,
       'total_amount': totalAmount,
       'shipping_address': shippingAddress,
       'payment_method': paymentMethod,

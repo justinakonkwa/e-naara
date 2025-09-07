@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:ecommerce/services/qr_code_service.dart';
 import 'package:ecommerce/services/supabase_service.dart';
+import 'package:ecommerce/services/camera_permission_service.dart';
 
 class DeliveryConfirmationScreen extends StatefulWidget {
   const DeliveryConfirmationScreen({super.key});
@@ -15,12 +16,62 @@ class _DeliveryConfirmationScreenState extends State<DeliveryConfirmationScreen>
   final _codeController = TextEditingController();
   bool _isScanning = true;
   bool _isProcessing = false;
+  bool _hasCameraPermission = false;
   String? _scannedOrderId;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCameraPermission();
+  }
 
   @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkCameraPermission() async {
+    final hasPermission = await CameraPermissionService.requestCameraPermission();
+    setState(() {
+      _hasCameraPermission = hasPermission;
+    });
+    
+    if (!hasPermission) {
+      _showPermissionError();
+    }
+  }
+
+  void _showPermissionError() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Permission Caméra Requise'),
+          content: const Text(
+            'Cette fonctionnalité nécessite l\'accès à la caméra pour scanner les codes QR. '
+            'Veuillez autoriser l\'accès à la caméra dans les paramètres de l\'application.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Retour à l'écran précédent
+              },
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await CameraPermissionService.openAppSettings();
+              },
+              child: const Text('Paramètres'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -136,6 +187,82 @@ class _DeliveryConfirmationScreenState extends State<DeliveryConfirmationScreen>
     );
   }
 
+  Widget _buildPermissionRequestWidget(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary,
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.camera_alt_outlined,
+              size: 80,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Permission Caméra Requise',
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Cette fonctionnalité nécessite l\'accès à la caméra pour scanner les codes QR.',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: _checkCameraPermission,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Autoriser la Caméra',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 15),
+            TextButton(
+              onPressed: () async {
+                await CameraPermissionService.openAppSettings();
+              },
+              child: Text(
+                'Ouvrir les Paramètres',
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -154,23 +281,25 @@ class _DeliveryConfirmationScreenState extends State<DeliveryConfirmationScreen>
           if (_isScanning) ...[
             Expanded(
               flex: 2,
-              child: Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: MobileScanner(
-                    onDetect: _onDetect,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+              child: _hasCameraPermission 
+                ? Container(
+                    margin: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: MobileScanner(
+                        onDetect: _onDetect,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  )
+                : _buildPermissionRequestWidget(theme),
             ),
           ],
 

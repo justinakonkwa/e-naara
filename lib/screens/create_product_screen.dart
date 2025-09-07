@@ -26,6 +26,7 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
   
   String? _selectedCategory;
   String? _selectedSubcategory;
+  String _selectedCurrency = 'USD';
   bool _isAvailable = true;
   bool _isFeatured = false;
   List<String> _tags = [];
@@ -37,6 +38,13 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
   bool _isLoading = false;
   bool _isUploadingImage = false;
   String? _error;
+
+  // Liste des devises disponibles
+  final List<Map<String, String>> _currencies = [
+    {'code': 'USD', 'name': 'Dollar US (\$)'},
+    {'code': 'EUR', 'name': 'Euro (€)'},
+    {'code': 'CDF', 'name': 'Franc Congolais (FC)'},
+  ];
 
   @override
   void dispose() {
@@ -226,6 +234,7 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
         tags: _tags,
         specifications: {}, // Pour l'instant, vide
         createdAt: DateTime.now(),
+        currency: _selectedCurrency,
       );
 
       final success = await SupabaseService.createProduct(product, imageFiles: _selectedImages);
@@ -476,15 +485,43 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Devise
+              DropdownButtonFormField<String>(
+                value: _selectedCurrency,
+                decoration: const InputDecoration(
+                  labelText: 'Devise *',
+                  border: OutlineInputBorder(),
+                ),
+                items: _currencies.map((currency) {
+                  return DropdownMenuItem(
+                    value: currency['code'],
+                    child: Text(currency['name']!),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCurrency = value!;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Veuillez sélectionner une devise';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
               // Prix
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _priceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Prix (€) *',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: 'Prix *',
+                        border: const OutlineInputBorder(),
+                        suffixText: _selectedCurrency,
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
@@ -502,9 +539,10 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _originalPriceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Prix original (€)',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: 'Prix original',
+                        border: const OutlineInputBorder(),
+                        suffixText: _selectedCurrency,
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) {

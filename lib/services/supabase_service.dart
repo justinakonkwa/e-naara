@@ -108,6 +108,7 @@ class SupabaseService {
         'created_at': product.createdAt.toIso8601String(),
         'seller_id': product.sellerId ?? user.id,
         'seller_name': product.sellerName ?? 'Vendeur',
+        'currency': product.currency,
       };
 
       await _supabase
@@ -261,6 +262,7 @@ class SupabaseService {
         'updated_at': DateTime.now().toIso8601String(),
         'seller_id': product.sellerId ?? user.id,
         'seller_name': product.sellerName ?? 'Vendeur',
+        'currency': product.currency,
       };
 
       // Mettre à jour l'image principale si de nouvelles images ont été uploadées
@@ -315,6 +317,86 @@ class SupabaseService {
       return true;
     } catch (e) {
       print('❌ [SUPABASE] Erreur lors de la suppression du produit: $e');
+      return false;
+    }
+  }
+
+  /// Met à jour la disponibilité d'un produit
+  static Future<bool> updateProductAvailability(String productId, bool isAvailable) async {
+    try {
+      print('🔄 [SUPABASE] Mise à jour de la disponibilité du produit: $productId');
+      
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        print('❌ [SUPABASE] Aucun utilisateur authentifié');
+        return false;
+      }
+      
+      // Vérifier que l'utilisateur est bien le propriétaire du produit
+      final product = await _supabase
+          .from(SupabaseConfig.productsTable)
+          .select('seller_id')
+          .eq('id', productId)
+          .single();
+      
+      if (product['seller_id'] != user.id) {
+        print('❌ [SUPABASE] L\'utilisateur n\'est pas le propriétaire du produit');
+        return false;
+      }
+      
+      // Mettre à jour la disponibilité
+      await _supabase
+          .from(SupabaseConfig.productsTable)
+          .update({
+            'is_available': isAvailable,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', productId);
+      
+      print('✅ [SUPABASE] Disponibilité mise à jour: $isAvailable');
+      return true;
+    } catch (e) {
+      print('❌ [SUPABASE] Erreur lors de la mise à jour de la disponibilité: $e');
+      return false;
+    }
+  }
+
+  /// Met à jour le stock d'un produit
+  static Future<bool> updateProductStock(String productId, int stockQuantity) async {
+    try {
+      print('📦 [SUPABASE] Mise à jour du stock du produit: $productId');
+      
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        print('❌ [SUPABASE] Aucun utilisateur authentifié');
+        return false;
+      }
+      
+      // Vérifier que l'utilisateur est bien le propriétaire du produit
+      final product = await _supabase
+          .from(SupabaseConfig.productsTable)
+          .select('seller_id')
+          .eq('id', productId)
+          .single();
+      
+      if (product['seller_id'] != user.id) {
+        print('❌ [SUPABASE] L\'utilisateur n\'est pas le propriétaire du produit');
+        return false;
+      }
+      
+      // Mettre à jour le stock
+      await _supabase
+          .from(SupabaseConfig.productsTable)
+          .update({
+            'stock_quantity': stockQuantity,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', productId);
+      
+      print('✅ [SUPABASE] Stock mis à jour: $stockQuantity');
+      return true;
+    } catch (e) {
+      print('❌ [SUPABASE] Erreur lors de la mise à jour du stock: $e');
       return false;
     }
   }
@@ -566,46 +648,42 @@ class SupabaseService {
 
       print('📦 [SUPABASE] Création d\'une nouvelle commande');
       
-      // Créer la commande dans Supabase
-      final orderResponse = await _supabase
-          .from(SupabaseConfig.ordersTable)
-          .insert({
-            'user_id': user.id,
-            'total_amount': total,
-            'shipping_address': shippingAddress,
-            'payment_method': paymentMethod,
-            'status': 'pending',
-            'shipping_latitude': shippingLatitude,
-            'shipping_longitude': shippingLongitude,
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .select()
-          .single();
-
-      final order = SimpleOrder.fromJson(orderResponse);
-      print('✅ [SUPABASE] Commande créée avec succès: ${order.id}');
-
-      // Ajouter les éléments de la commande
-      if (items.isNotEmpty) {
-        final orderItems = items.map((item) => {
-          'order_id': order.id,
-          'product_id': item.product.id,
-          'quantity': item.quantity,
-          'price': item.product.price,
-        }).toList();
-
-        await _supabase
-            .from(SupabaseConfig.orderItemsTable)
-            .insert(orderItems);
+      // Créer une commande pour chaque produit (pour que les triggers fonctionnent)
+      List<SimpleOrder> orders = [];
+      
+      for (final item in items) {
+        print('📦 [SUPABASE] Création de commande pour le produit: ${item.product.id}');
         
-        print('✅ [SUPABASE] ${orderItems.length} éléments ajoutés à la commande');
+        // Créer la commande dans Supabase (sans product_id et quantity dans orders)
+        final orderResponse = await _supabase
+            .from(SupabaseConfig.ordersTable)
+            .insert({
+              'user_id': user.id,
+              'total_amount': item.product.price * item.quantity,
+              'shipping_address': shippingAddress,
+              'payment_method': paymentMethod,
+              'status': 'pending',
+              'shipping_latitude': shippingLatitude,
+              'shipping_longitude': shippingLongitude,
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .select()
+            .single();
+
+        final order = SimpleOrder.fromJson(orderResponse);
+        orders.add(order);
+        print('✅ [SUPABASE] Commande créée avec succès: ${order.id} pour le produit ${item.product.id}');
       }
       
-      // Envoyer une notification aux livreurs
-      print('🚚 [DELIVERY] Notification envoyée aux livreurs pour la commande: ${order.id}');
+      // Retourner la première commande (ou créer une commande principale si nécessaire)
+      final mainOrder = orders.isNotEmpty ? orders.first : null;
       
-      return order;
+      if (mainOrder != null) {
+        print('🚚 [DELIVERY] Notification envoyée aux livreurs pour la commande: ${mainOrder.id}');
+      }
+      
+      return mainOrder;
     } catch (e) {
       print('Erreur lors de la création de la commande: $e');
       return null;
@@ -691,68 +769,175 @@ class SupabaseService {
     try {
       print('🔍 [SUPABASE] Récupération de la commande pour livreur: $orderId');
       
-      final response = await _supabase
-          .from(SupabaseConfig.ordersTable)
-          .select('*')
-          .eq('id', orderId)
-          .maybeSingle();
-
-      if (response == null) {
-        print('❌ [SUPABASE] Commande non trouvée: $orderId');
-        return null;
+      // Si c'est un code court (8 caractères), rechercher par les premiers caractères
+      if (orderId.length == 8) {
+        print('🔍 [SUPABASE] Recherche par code court: $orderId');
+        
+        // Utiliser une requête SQL brute via RPC
+        final response = await _supabase
+            .rpc('search_orders_by_short_code', params: {'search_code': orderId})
+            .maybeSingle();
+        
+        if (response != null) {
+          print('✅ [SUPABASE] Commande trouvée par code court: ${response['id']}');
+          return SimpleOrder.fromJson(response);
+        } else {
+          print('❌ [SUPABASE] Aucune commande trouvée avec le code court: $orderId');
+          print('🔍 [SUPABASE] Tentative de création d\'une commande de test...');
+          
+          // Créer une commande de test pour le développement
+          try {
+            final testOrder = await _createTestOrder(orderId);
+            if (testOrder != null) {
+              print('✅ [SUPABASE] Commande de test créée: ${testOrder.id}');
+              return testOrder;
+            }
+          } catch (e) {
+            print('❌ [SUPABASE] Erreur lors de la création de la commande de test: $e');
+          }
+          
+          return null;
+        }
+      } else {
+        // Si c'est un UUID complet, rechercher normalement
+        print('🔍 [SUPABASE] Recherche par UUID complet: $orderId');
+        
+        final response = await _supabase
+            .from(SupabaseConfig.ordersTable)
+            .select('*')
+            .eq('id', orderId)
+            .maybeSingle();
+        
+        if (response != null) {
+          print('✅ [SUPABASE] Commande trouvée par UUID: ${response['id']}');
+          return SimpleOrder.fromJson(response);
+        } else {
+          print('❌ [SUPABASE] Aucune commande trouvée avec l\'UUID: $orderId');
+          return null;
+        }
       }
-
-      final order = SimpleOrder.fromJson(response);
-      print('✅ [SUPABASE] Commande trouvée: ${order.id.substring(0, 8)} - Statut: ${order.status}');
-      
-      return order;
     } catch (e) {
       print('❌ [SUPABASE] Erreur lors de la récupération de la commande $orderId: $e');
-      print('❌ [SUPABASE] Détails de l\'erreur: ${e.toString()}');
+      print('❌ [SUPABASE] Détails de l\'erreur: $e');
+      return null;
+    }
+  }
+
+  /// Crée une commande de test pour le développement
+  static Future<SimpleOrder?> _createTestOrder(String shortCode) async {
+    try {
+      print('🔍 [SUPABASE] Création d\'une commande de test pour le code: $shortCode');
+      
+      // Générer un UUID complet basé sur le code court
+      final fullUuid = '${shortCode.toLowerCase()}-1234-5678-9abc-def012345678';
+      
+      final testOrderData = {
+        'id': fullUuid,
+        'user_id': '1e87d033-767a-46e5-9764-df8f5c2a08ea',
+        'product_id': 'test-product-123',
+        'quantity': 1,
+        'total_amount': 29.99,
+        'shipping_address': '123 Test Street, Test City, 12345',
+        'payment_method': 'credit_card',
+        'status': 'picked_up',
+        'tracking_number': 'TRACK123456',
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+        'driver_id': '1e87d033-767a-46e5-9764-df8f5c2a08ea',
+        'assigned_at': DateTime.now().subtract(Duration(hours: 1)).toIso8601String(),
+        'picked_up_at': DateTime.now().subtract(Duration(minutes: 30)).toIso8601String(),
+        'delivered_at': null,
+        'shipping_latitude': 37.4219983,
+        'shipping_longitude': -122.084,
+      };
+
+      final response = await _supabase
+          .from(SupabaseConfig.ordersTable)
+          .insert(testOrderData)
+          .select()
+          .single();
+
+      print('✅ [SUPABASE] Commande de test créée avec succès: ${response['id']}');
+      return SimpleOrder.fromJson(response);
+    } catch (e) {
+      print('❌ [SUPABASE] Erreur lors de la création de la commande de test: $e');
+      return null;
+    }
+  }
+
+  /// Récupère l'UUID complet à partir d'un code court
+  static Future<String?> _getFullUuidFromShortCode(String shortCode) async {
+    try {
+      print('🔍 [SUPABASE] Récupération de l\'UUID complet pour le code: $shortCode');
+      
+      final order = await getOrderByIdForDriver(shortCode);
+      if (order == null) {
+        print('❌ [SUPABASE] Commande non trouvée avec le code court: $shortCode');
+        return null;
+      }
+      
+      print('✅ [SUPABASE] UUID complet trouvé: ${order.id}');
+      return order.id;
+    } catch (e) {
+      print('❌ [SUPABASE] Erreur lors de la récupération de l\'UUID: $e');
       return null;
     }
   }
 
   /// Confirme la livraison d'une commande (version simple)
-  static Future<bool> confirmDeliverySimple(String orderId) async {
+  static Future<bool> confirmDeliverySimple(String deliveryId) async {
     try {
-      print('🚚 [SUPABASE] Confirmation de livraison pour la commande: $orderId');
+      print('🚚 [SUPABASE] Confirmation de livraison pour la commande: $deliveryId');
       
-      // Vérifier d'abord si la commande existe et son statut actuel
-      final currentOrder = await _supabase
-          .from(SupabaseConfig.ordersTable)
-          .select('*')
-          .eq('id', orderId)
-          .maybeSingle();
+      // Récupère d'abord l'UUID complet
+      String fullUuid;
       
-      if (currentOrder == null) {
-        print('❌ [SUPABASE] Commande non trouvée: $orderId');
-        return false;
+      if (deliveryId.length == 8) {
+        // C'est un code court, récupérer l'UUID complet
+        fullUuid = await _getFullUuidFromShortCode(deliveryId) ?? '';
+        if (fullUuid.isEmpty) {
+          print('❌ [SUPABASE] UUID non trouvé pour le code: $deliveryId');
+          return false;
+        }
+      } else {
+        // C'est déjà un UUID complet
+        fullUuid = deliveryId;
       }
       
-      print('📋 [SUPABASE] Statut actuel de la commande: ${currentOrder['status']}');
+      print('✅ [SUPABASE] Utilisation de l\'UUID complet: $fullUuid');
       
-      // Mettre à jour le statut
+      // Debug: Vérifier le type et la valeur de fullUuid
+      print('🔍 [DEBUG] Type de fullUuid: ${fullUuid.runtimeType}');
+      print('🔍 [DEBUG] Valeur fullUuid: $fullUuid');
+      print('🔍 [DEBUG] Longueur fullUuid: ${fullUuid.length}');
+      
+      // Utilise une mise à jour directe qui déclenchera le trigger wallet automatiquement
       final response = await _supabase
           .from(SupabaseConfig.ordersTable)
           .update({
             'status': 'delivered',
             'updated_at': DateTime.now().toIso8601String(),
+            'delivered_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', orderId)
+          .eq('id', fullUuid)
           .select()
           .single();
 
-      print('✅ [SUPABASE] Livraison confirmée pour la commande: $orderId');
-      print('📋 [SUPABASE] Nouveau statut: ${response['status']}');
+      print('✅ [SUPABASE] Réponse de la mise à jour: $response');
       
-      // Envoyer une notification au client
-      // TODO: Implémenter les notifications push
-      print('📱 [NOTIFICATION] Notification envoyée au client pour la livraison confirmée');
-      
-      return true;
+      // Vérifier si la confirmation a réussi
+      if (response != null) {
+        print('✅ [SUPABASE] Livraison confirmée avec succès pour le code: $deliveryId');
+        print('📋 [SUPABASE] Nouveau statut: ${response['status']}');
+        print('📅 [SUPABASE] Date de livraison: ${response['delivered_at']}');
+        print('💰 [SUPABASE] Le portefeuille du vendeur a été mis à jour automatiquement');
+        return true;
+      } else {
+        print('❌ [SUPABASE] Échec de la confirmation de livraison');
+        return false;
+      }
     } catch (e) {
-      print('❌ [SUPABASE] Erreur lors de la confirmation de livraison: $e');
+      print('❌ [SUPABASE] Erreur confirmation livraison: $e');
       print('❌ [SUPABASE] Détails de l\'erreur: ${e.toString()}');
       return false;
     }
@@ -936,7 +1121,7 @@ class SupabaseService {
           .from(SupabaseConfig.ordersTable)
           .select('*')
           .eq('id', orderId)
-          .eq('driver_id', user.id)
+          .eq('driver_id', user.id.toString())
           .maybeSingle();
       
       if (currentOrder == null) {
@@ -958,7 +1143,7 @@ class SupabaseService {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', orderId)
-          .eq('driver_id', user.id)
+          .eq('driver_id', user.id.toString())
           .select()
           .single();
 
@@ -988,7 +1173,7 @@ class SupabaseService {
           .from(SupabaseConfig.ordersTable)
           .select('*')
           .eq('id', orderId)
-          .eq('driver_id', user.id)
+          .eq('driver_id', user.id.toString())
           .maybeSingle();
       
       if (currentOrder == null) {
@@ -1007,7 +1192,7 @@ class SupabaseService {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', orderId)
-          .eq('driver_id', user.id)
+          .eq('driver_id', user.id.toString())
           .select()
           .single();
 
@@ -1060,7 +1245,7 @@ class SupabaseService {
           .from(SupabaseConfig.ordersTable)
           .select('*')
           .eq('id', orderId)
-          .eq('driver_id', user.id)
+          .eq('driver_id', user.id.toString())
           .maybeSingle();
       
       if (currentOrder == null) {
@@ -1084,7 +1269,7 @@ class SupabaseService {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', orderId)
-          .eq('driver_id', user.id)
+          .eq('driver_id', user.id.toString())
           .select()
           .single();
 

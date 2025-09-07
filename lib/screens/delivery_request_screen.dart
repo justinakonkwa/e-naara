@@ -163,7 +163,7 @@ class DeliveryRequestScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildInfoRow('ID Commande', '#${delivery.order.id.substring(0, 8)}'),
-          _buildInfoRow('Montant total', '${delivery.order.totalAmount.toStringAsFixed(2)} €'),
+          _buildInfoRow('Montant total', '\$${delivery.order.totalAmount.toStringAsFixed(2)}'),
           _buildInfoRow('Méthode de paiement', delivery.order.paymentMethod),
           _buildInfoRow('Date de création', _formatDate(delivery.createdAt)),
           if (delivery.acceptedAt != null)

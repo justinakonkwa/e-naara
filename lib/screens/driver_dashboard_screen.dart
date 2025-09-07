@@ -30,6 +30,13 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Rafraîchir les commandes quand l'écran redevient actif
+    _loadOrders();
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     super.dispose();

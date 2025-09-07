@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ecommerce/services/auth_service.dart';
+import 'package:ecommerce/services/wallet_service.dart';
 import 'package:ecommerce/screens/order_history_screen.dart';
+import 'package:ecommerce/screens/wallet_screen.dart';
+import 'package:ecommerce/screens/my_products_screen.dart';
+import 'package:ecommerce/screens/favorites_screen.dart';
 import 'package:ecommerce/models/user_role.dart';
 import 'package:ecommerce/services/supabase_service.dart';
+import 'package:ecommerce/widgets/shimmer_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,7 +18,63 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isLoading = false;
+  bool _isLoading = true;
+  bool _hasProducts = false;
+  bool _hasFavorites = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    // Simuler un chargement
+    await Future.delayed(const Duration(milliseconds: 800));
+    
+    // Charger le portefeuille
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WalletService>().loadWallet();
+    });
+    
+    // Vérifier si l'utilisateur a des produits et des favoris
+    await Future.wait([
+      _checkUserProducts(),
+      _checkUserFavorites(),
+    ]);
+    
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _checkUserProducts() async {
+    try {
+      final products = await SupabaseService.getMyProducts();
+      setState(() {
+        _hasProducts = products.isNotEmpty;
+      });
+    } catch (e) {
+      print('Erreur lors de la vérification des produits: $e');
+      setState(() {
+        _hasProducts = false;
+      });
+    }
+  }
+
+  Future<void> _checkUserFavorites() async {
+    try {
+      final favorites = await SupabaseService.getWishlist();
+      setState(() {
+        _hasFavorites = favorites.isNotEmpty;
+      });
+    } catch (e) {
+      print('Erreur lors de la vérification des favoris: $e');
+      setState(() {
+        _hasFavorites = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +93,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: const Center(
           child: Text('Veuillez vous connecter'),
         ),
+      );
+    }
+
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        appBar: AppBar(
+          title: const Text('Profil'),
+          backgroundColor: theme.colorScheme.surface,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        body: const ProfileShimmer(),
       );
     }
 
@@ -58,6 +132,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // Rôle actuel
             _buildRoleSection(theme, currentRole),
+            const SizedBox(height: 24),
+
+            // Portefeuille
+            _buildWalletSection(theme),
             const SizedBox(height: 24),
 
             // Menu principal
@@ -243,6 +321,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+        // Afficher les favoris si l'utilisateur en a
+        if (_hasFavorites)
+          _buildMenuItem(
+            theme,
+            'Mes Favoris',
+            Icons.favorite,
+            () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const FavoritesScreen(),
+              ),
+            ),
+          ),
+        // Afficher la gestion des produits si l'utilisateur a des produits
+        if (_hasProducts)
+          _buildMenuItem(
+            theme,
+            'Ma Boutique',
+            Icons.store,
+            () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const MyProductsScreen(),
+              ),
+            ),
+          ),
         if (UserRoleManager.isAdmin)
           _buildMenuItem(
             theme,
@@ -477,6 +579,276 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildWalletSection(ThemeData theme) {
+    return Consumer<WalletService>(
+      builder: (context, walletService, child) {
+        if (walletService.isLoading) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text('Chargement du portefeuille...'),
+              ],
+            ),
+          );
+        }
+
+        if (walletService.error != null) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Erreur: ${walletService.error}',
+                    style: TextStyle(color: Colors.red.shade700),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => walletService.loadWallet(),
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final wallet = walletService.wallet;
+        if (wallet == null) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.account_balance_wallet, color: Colors.grey),
+                SizedBox(width: 8),
+                Text('Aucun portefeuille trouvé'),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                spreadRadius: 2,
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Mon Portefeuille',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      wallet.currency == 'USD' ? 'USD' : 'CDF',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${wallet.balance.toStringAsFixed(2)} ${wallet.currency == 'USD' ? '\$' : 'FC'}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: wallet.balance > 0 ? () => _showWalletDetails(wallet) : null,
+                      icon: const Icon(Icons.visibility, size: 18),
+                      label: const Text('Voir détails'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF667eea),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: wallet.balance > 0 ? () => _showWithdrawDialog(wallet) : null,
+                      icon: const Icon(Icons.account_balance_wallet, size: 18),
+                      label: const Text('Retirer'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showWalletDetails(wallet) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const WalletScreen(),
+      ),
+    );
+  }
+
+  void _showWithdrawDialog(wallet) {
+    final TextEditingController withdrawController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Retirer des fonds'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Solde disponible: ${wallet.balance.toStringAsFixed(2)} ${wallet.currency == 'USD' ? '\$' : 'FC'}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: withdrawController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Montant à retirer (${wallet.currency == 'USD' ? '\$' : 'FC'})',
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Veuillez entrer un montant';
+                  }
+                  final amount = double.tryParse(value);
+                  if (amount == null || amount <= 0) {
+                    return 'Montant invalide';
+                  }
+                  if (amount > wallet.balance) {
+                    return 'Montant supérieur au solde disponible';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => _processWithdrawal(wallet, withdrawController, formKey),
+            child: const Text('Retirer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _processWithdrawal(wallet, TextEditingController controller, GlobalKey<FormState> formKey) async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
+    final amount = double.parse(controller.text);
+    
+    try {
+      await context.read<WalletService>().withdraw(
+        amount,
+        'Retrait de fonds',
+      );
+      
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Retrait de ${amount.toStringAsFixed(2)} ${wallet.currency == 'USD' ? '\$' : 'FC'} effectué'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _logout(AuthService authService) async {

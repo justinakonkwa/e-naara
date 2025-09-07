@@ -470,7 +470,7 @@ class _ClientOrderTrackingScreenState extends State<ClientOrderTrackingScreen> {
               _buildInfoRow('Adresse', _order!.shippingAddress, Icons.location_on),
               if (_driverAddress != null)
                 _buildInfoRow('Adresse livreur', _driverAddress!, Icons.delivery_dining),
-              _buildInfoRow('Montant', '${_order!.totalAmount.toStringAsFixed(2)} €', Icons.euro),
+              _buildInfoRow('Montant', '\$${_order!.totalAmount.toStringAsFixed(2)}', Icons.attach_money),
               _buildInfoRow('Date', _formatDate(_order!.createdAt), Icons.calendar_today),
               if (_routeDistanceText != null && _routeDurationText != null)
                 _buildInfoRow('Itinéraire', '${_routeDistanceText!} • ${_routeDurationText!}', Icons.alt_route),

@@ -227,7 +227,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               ),
                             ),
                             Text(
-                              '${(item.product.price * item.quantity).toStringAsFixed(2)} €',
+                              item.product.formatPrice(item.product.price * item.quantity),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -376,7 +376,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: _isProcessing
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          'Confirmer la commande (${_calculateTotal().toStringAsFixed(2)} €)',
+                          'Confirmer la commande (\$${_calculateTotal().toStringAsFixed(2)})',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -403,7 +403,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           Text(
-            '${amount.toStringAsFixed(2)} €',
+            '\$${amount.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
             ),

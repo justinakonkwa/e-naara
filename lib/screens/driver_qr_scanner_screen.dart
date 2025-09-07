@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:ecommerce/services/qr_code_service.dart';
 import 'package:ecommerce/services/supabase_service.dart';
+import 'package:ecommerce/services/camera_permission_service.dart';
 import 'package:ecommerce/models/order.dart';
+import 'package:ecommerce/screens/driver_history_screen.dart'; // Added import for DriverHistoryScreen
 
 class DriverQRScannerScreen extends StatefulWidget {
   const DriverQRScannerScreen({super.key});
@@ -15,12 +17,136 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
   MobileScannerController controller = MobileScannerController();
   bool _isScanning = true;
   bool _isProcessing = false;
+  bool _hasCameraPermission = false;
   List<Map<String, dynamic>> _scannedOrders = [];
+  
+  // Contrôleur pour la saisie manuelle
+  final TextEditingController _manualCodeController = TextEditingController();
+  bool _showManualInput = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCameraPermission();
+  }
 
   @override
   void dispose() {
     controller.dispose();
+    _manualCodeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkCameraPermission() async {
+    final hasPermission = await CameraPermissionService.requestCameraPermission();
+    setState(() {
+      _hasCameraPermission = hasPermission;
+    });
+    
+    if (!hasPermission) {
+      _showPermissionError();
+    }
+  }
+
+  void _showPermissionError() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Permission Caméra Requise'),
+          content: const Text(
+            'Cette fonctionnalité nécessite l\'accès à la caméra pour scanner les codes QR. '
+            'Veuillez autoriser l\'accès à la caméra dans les paramètres de l\'application.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Retour à l'écran précédent
+              },
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await CameraPermissionService.openAppSettings();
+              },
+              child: const Text('Paramètres'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPermissionRequestWidget() {
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.camera_alt_outlined,
+              size: 80,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Permission Caméra Requise',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Cette fonctionnalité nécessite l\'accès à la caméra pour scanner les codes QR.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: _checkCameraPermission,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Autoriser la Caméra',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            const SizedBox(height: 15),
+            TextButton(
+              onPressed: () async {
+                await CameraPermissionService.openAppSettings();
+              },
+              child: const Text(
+                'Ouvrir les Paramètres',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -103,26 +229,115 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
     }
   }
 
+  // Nouvelle méthode pour traiter la saisie manuelle
+  void _processManualCode() async {
+    final code = _manualCodeController.text.trim();
+    if (code.isEmpty) {
+      _showError('Veuillez saisir un code de commande');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      print('🔍 [SCANNER] Traitement du code saisi: $code');
+      
+      // Essayer de traiter comme un QR code d'abord
+      if (QRCodeService.isValidOrderQRCode(code)) {
+        print('🔍 [SCANNER] Code détecté comme QR code valide');
+        final orderId = QRCodeService.extractOrderId(code);
+        if (orderId != null) {
+          await _processOrderId(orderId, code);
+          return;
+        }
+      }
+
+      // Si ce n'est pas un QR code valide, traiter comme un ID de commande direct
+      print('🔍 [SCANNER] Code traité comme ID de commande direct');
+      
+      // Vérifier la longueur minimale
+      if (code.length < 8) {
+        _showError('Code de commande invalide (minimum 8 caractères)');
+        return;
+      }
+
+      // Si c'est un code de 8 caractères, valider le format
+      if (code.length == 8) {
+        if (!QRCodeService.isValidShortCodeFormat(code)) {
+          _showError('Code court invalide (format hexadécimal requis: 0-9, A-F)');
+          return;
+        }
+        print('🔍 [SCANNER] Code court valide détecté: $code');
+      }
+
+      // Normaliser le code (majuscules pour les codes courts)
+      final normalizedCode = code.length == 8 ? QRCodeService.normalizeShortCode(code) : code;
+      
+      await _processOrderId(normalizedCode, code);
+    } catch (e) {
+      print('❌ [SCANNER] Erreur lors du traitement: $e');
+      _showError('Erreur lors du traitement: $e');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  // Méthode commune pour traiter un ID de commande
+  Future<void> _processOrderId(String orderId, String originalCode) async {
+    // Vérifier si la commande a déjà été scannée
+    if (_scannedOrders.any((order) => order['order_id'] == orderId)) {
+      _showError('Cette commande a déjà été scannée');
+      return;
+    }
+
+    // Récupérer les vraies données de la commande depuis Supabase
+    final order = await SupabaseService.getOrderByIdForDriver(orderId);
+    
+    if (order == null) {
+      _showError('Commande non trouvée dans la base de données');
+      return;
+    }
+
+    // Vérifier que la commande n'est pas déjà livrée
+    if (order.status == 'delivered') {
+      _showError('Cette commande a déjà été livrée');
+      return;
+    }
+
+    // Ajouter la commande à la liste
+    setState(() {
+      _scannedOrders.add({
+        'order_id': orderId,
+        'qr_data': {'order_id': orderId, 'type': 'manual_input'},
+        'order': order,
+        'scanned_at': DateTime.now(),
+        'input_method': 'manual',
+      });
+    });
+
+    _showSuccess('Commande #${orderId.substring(0, 8)} ajoutée avec succès');
+    _manualCodeController.clear();
+    setState(() {
+      _showManualInput = false;
+    });
+  }
+
   void _showError(String message) {
     setState(() {
       _isProcessing = false;
       _isScanning = true;
     });
-
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Réessayer',
-          textColor: Colors.white,
-          onPressed: () {
-            setState(() {
-              _isScanning = true;
-            });
-          },
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -133,6 +348,7 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
         content: Text(message),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -214,15 +430,19 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
 
         _showSuccess('Livraison confirmée pour la commande #${orderId.substring(0, 8)}');
         
-        // Afficher une boîte de dialogue de confirmation
+        // Afficher une boîte de dialogue de confirmation et retourner au dashboard
         showDialog(
           context: context,
+          barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: const Text('Livraison Confirmée'),
             content: Text('La livraison de la commande #${orderId.substring(0, 8)} a été confirmée avec succès.'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Fermer la boîte de dialogue
+                  Navigator.of(context).pop(); // Retourner au dashboard
+                },
                 child: const Text('OK'),
               ),
             ],
@@ -248,74 +468,58 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
     controller.switchCamera();
   }
 
-  void _showDeliveryHistory() async {
-    print('📋 [DRIVER] Affichage de l\'historique des livraisons');
-    
-    // Afficher un indicateur de chargement
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
+  void _showDeliveryHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const DriverHistoryScreen(),
       ),
     );
+  }
 
-    try {
-      // Récupérer l'historique des livraisons
-      print('📋 [DRIVER] Appel de SupabaseService.getDeliveredOrders...');
-      final deliveredOrders = await SupabaseService.getDeliveredOrders();
-      print('📋 [DRIVER] Nombre de commandes livrées récupérées: ${deliveredOrders.length}');
-      
-      // Fermer l'indicateur de chargement
-      Navigator.of(context).pop();
-
-      // Afficher l'historique dans une boîte de dialogue
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Historique des Livraisons'),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: deliveredOrders.isEmpty
-              ? const Center(
-                  child: Text('Aucune livraison confirmée'),
-                )
-              : ListView.builder(
-                  itemCount: deliveredOrders.length,
-                  itemBuilder: (context, index) {
-                    final order = deliveredOrders[index];
-                    return ListTile(
-                      title: Text('Commande #${order.id.substring(0, 8)}'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${order.totalAmount.toStringAsFixed(2)} €'),
-                          Text('Livrée le ${_formatDate(order.updatedAt)}'),
-                        ],
-                      ),
-                      trailing: Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                      ),
-                    );
-                  },
-                ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fermer'),
-            ),
+  void _showOrderDetails(Map<String, dynamic> scannedOrder) {
+    final order = scannedOrder['order'] as SimpleOrder;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Commande #${order.id.substring(0, 8)}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Montant: \$${order.totalAmount.toStringAsFixed(2)}'),
+            Text('Adresse: ${order.shippingAddress}'),
+            Text('Statut: ${order.status}'),
+            Text('Scannée le: ${scannedOrder['scanned_at'].toString().substring(0, 19)}'),
+            if (scannedOrder['input_method'] == 'manual')
+              const Text('Méthode: Saisie manuelle', style: TextStyle(fontStyle: FontStyle.italic)),
           ],
         ),
-      );
-    } catch (e) {
-      print('📋 [DRIVER] Erreur lors du chargement de l\'historique: $e');
-      // Fermer l'indicateur de chargement
-      Navigator.of(context).pop();
-      _showError('Erreur lors du chargement de l\'historique: $e');
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _confirmDelivery(order.id);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmer Livraison'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleManualInput() {
+    setState(() {
+      _showManualInput = !_showManualInput;
+      if (!_showManualInput) {
+        _manualCodeController.clear();
+      }
+    });
   }
 
   @override
@@ -354,27 +558,37 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
       body: Column(
         children: [
           // Scanner
-          Expanded(
-            flex: 2,
-            child: Stack(
-              children: [
-                MobileScanner(
-                  controller: controller,
-                  onDetect: _onDetect,
-                ),
-                
-                // Overlay avec zone de scan
-                _buildScanOverlay(),
-                
-                // Indicateur de traitement
-                if (_isProcessing)
-                  _buildProcessingOverlay(),
-                
-                // Instructions
-                _buildInstructions(),
-              ],
+          if (!_showManualInput) ...[
+            Expanded(
+              flex: 2,
+              child: _hasCameraPermission 
+                ? Stack(
+                    children: [
+                      MobileScanner(
+                        controller: controller,
+                        onDetect: _onDetect,
+                      ),
+                      
+                      // Overlay avec zone de scan
+                      _buildScanOverlay(),
+                      
+                      // Indicateur de traitement
+                      if (_isProcessing)
+                        _buildProcessingOverlay(),
+                      
+                      // Instructions
+                      _buildInstructions(),
+                    ],
+                  )
+                : _buildPermissionRequestWidget(),
             ),
-          ),
+          ] else ...[
+            // Interface de saisie manuelle
+            Expanded(
+              flex: 2,
+              child: _buildManualInputInterface(),
+            ),
+          ],
           
           // Liste des commandes scannées
           Expanded(
@@ -382,6 +596,15 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
             child: _buildScannedOrdersList(),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: "driver_scanner_toggle", // Tag unique pour éviter les conflits
+        onPressed: _toggleManualInput,
+        backgroundColor: _showManualInput ? Colors.orange : Colors.blue,
+        child: Icon(
+          _showManualInput ? Icons.qr_code_scanner : Icons.keyboard,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -727,5 +950,101 @@ class _DriverQRScannerScreenState extends State<DriverQRScannerScreen> {
       default:
         return Colors.grey;
     }
+  }
+
+  Widget _buildManualInputInterface() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.keyboard,
+            size: 80,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Saisie Manuelle du Code',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Entrez le code de la commande manuellement',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 30),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextField(
+              controller: _manualCodeController,
+              decoration: const InputDecoration(
+                hintText: 'Entrez le code de commande...',
+                border: InputBorder.none,
+                hintStyle: TextStyle(color: Colors.grey),
+              ),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _processManualCode(),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isProcessing ? null : _processManualCode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isProcessing
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Valider le Code',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Vous pouvez saisir :\n• Un QR code complet\n• Un ID de commande (UUID)\n• Un code court de commande',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }

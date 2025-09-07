@@ -194,3 +194,5 @@ COMMENT ON COLUMN chat_messages.is_read IS 'Indique si le message a été lu par
 
 
 
+
+

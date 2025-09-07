@@ -9,6 +9,7 @@ import 'package:ecommerce/screens/chat_screen.dart';
 import 'package:ecommerce/services/data_service.dart';
 import 'package:ecommerce/data/sample_data.dart';
 import 'package:ecommerce/screens/edit_product_screen.dart';
+import 'package:ecommerce/widgets/shimmer_widgets.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -32,6 +33,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   int _quantity = 1;
   bool _showFullDescription = false;
   List<Product> _similarProducts = [];
+  bool _isLoadingSimilarProducts = true;
 
   @override
   void initState() {
@@ -71,9 +73,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }
 
   Future<void> _loadSimilarProducts() async {
+    setState(() {
+      _isLoadingSimilarProducts = true;
+    });
+    
     final similarProducts = await RecommendationService.getSimilarProducts(widget.product);
     setState(() {
       _similarProducts = similarProducts;
+      _isLoadingSimilarProducts = false;
     });
   }
 
@@ -249,6 +256,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(8),
+                     
                     ),
                     child: Icon(
                       Icons.share,
@@ -451,7 +459,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       children: [
                         if (widget.product.isOnSale) ...[
                           Text(
-                            '${widget.product.originalPrice.toStringAsFixed(2)} €',
+                            widget.product.formatPrice(widget.product.originalPrice),
                             style: theme.textTheme.titleMedium?.copyWith(
                               decoration: TextDecoration.lineThrough,
                               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -460,7 +468,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                           const SizedBox(width: 12),
                         ],
                         Text(
-                          '${widget.product.price.toStringAsFixed(2)} €',
+                          widget.product.formatPrice(widget.product.price),
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -709,57 +717,77 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
             ),
 
             // Section des produits similaires
-            if (_similarProducts.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    border: Border(
-                      top: BorderSide(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                      ),
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Produits similaires',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Produits similaires',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        height: 280,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _similarProducts.length,
-                          itemBuilder: (context, index) {
-                            final product = _similarProducts[index];
-                            return Container(
-                              width: 160,
-                              margin: const EdgeInsets.only(right: 16),
-                              child: ProductCard(
-                                product: product,
-                                onTap: () {
-                                  Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(
-                                      builder: (context) => ProductDetailScreen(product: product),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 280,
+                      child: _isLoadingSimilarProducts
+                          ? ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: 4,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  width: 160,
+                                  margin: const EdgeInsets.only(right: 16),
+                                  child: ProductCardShimmer(),
+                                );
+                              },
+                            )
+                          : _similarProducts.isNotEmpty
+                              ? ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _similarProducts.length,
+                                  itemBuilder: (context, index) {
+                                    final product = _similarProducts[index];
+                                    return Container(
+                                      width: 160,
+                                      margin: const EdgeInsets.only(right: 16),
+                                      child: ProductCard(
+                                        product: product,
+                                        onTap: () {
+                                          Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                              builder: (context) => ProductDetailScreen(product: product),
+                                            ),
+                                          );
+                                        },
+                                        showAddToCart: false,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Center(
+                                  child: Text(
+                                    'Aucun produit similaire trouvé',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                                     ),
-                                  );
-                                },
-                                showAddToCart: false,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+                                  ),
+                                ),
+                    ),
+                  ],
                 ),
               ),
+            ),
           ],
         ),
       ),

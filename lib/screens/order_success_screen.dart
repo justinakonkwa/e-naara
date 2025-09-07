@@ -155,7 +155,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             ),
                           ),
                           Text(
-                            '${_order!.totalAmount.toStringAsFixed(2)} €',
+                            '\$${_order!.totalAmount.toStringAsFixed(2)}',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),

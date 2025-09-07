@@ -29,6 +29,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late final TextEditingController _stockController;
   
   late String _selectedCategory;
+  late String _selectedCurrency;
   late bool _isAvailable;
   late bool _isFeatured;
   late List<String> _tags;
@@ -41,6 +42,13 @@ class _EditProductScreenState extends State<EditProductScreen> {
   bool _isLoading = false;
   bool _isUploadingImage = false;
   String? _error;
+
+  // Liste des devises disponibles
+  final List<Map<String, String>> _currencies = [
+    {'code': 'USD', 'name': 'Dollar US (\$)'},
+    {'code': 'EUR', 'name': 'Euro (€)'},
+    {'code': 'CDF', 'name': 'Franc Congolais (FC)'},
+  ];
 
   @override
   void initState() {
@@ -58,6 +66,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _stockController = TextEditingController(text: widget.product.stockQuantity.toString());
     
     _selectedCategory = widget.product.category;
+    _selectedCurrency = widget.product.currency;
     _isAvailable = widget.product.isAvailable;
     _isFeatured = widget.product.isFeatured;
     _tags = List.from(widget.product.tags);
@@ -196,6 +205,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         tags: _tags,
         specifications: widget.product.specifications,
         createdAt: widget.product.createdAt,
+        currency: _selectedCurrency,
       );
 
       final success = await SupabaseService.updateProduct(
@@ -369,14 +379,42 @@ class _EditProductScreenState extends State<EditProductScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Devise
+              DropdownButtonFormField<String>(
+                value: _selectedCurrency,
+                decoration: const InputDecoration(
+                  labelText: 'Devise *',
+                  border: OutlineInputBorder(),
+                ),
+                items: _currencies.map((currency) {
+                  return DropdownMenuItem(
+                    value: currency['code'],
+                    child: Text(currency['name']!),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCurrency = value!;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Veuillez sélectionner une devise';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _priceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Prix (€) *',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: 'Prix *',
+                        border: const OutlineInputBorder(),
+                        suffixText: _selectedCurrency,
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
@@ -394,9 +432,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _originalPriceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Prix original (€)',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: 'Prix original',
+                        border: const OutlineInputBorder(),
+                        suffixText: _selectedCurrency,
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) {

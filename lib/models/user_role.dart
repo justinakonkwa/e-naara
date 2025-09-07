@@ -1,5 +1,5 @@
 enum UserRole {
-  user,    // Client normal
+  user,    // Client normal (peut vendre des produits)
   driver,  // Livreur
   admin,   // Administrateur
 }
@@ -54,6 +54,7 @@ class UserRoleManager {
   static bool get isDriver => _currentRole == UserRole.driver;
   static bool get isAdmin => _currentRole == UserRole.admin;
   static bool get isUser => _currentRole == UserRole.user;
+  static bool get canSell => _currentRole == UserRole.user || _currentRole == UserRole.admin;
 
   static void setRole(UserRole role, String userId) {
     _currentRole = role;

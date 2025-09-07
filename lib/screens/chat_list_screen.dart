@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:provider/provider.dart';
 import 'package:ecommerce/services/app_state.dart';
 import 'package:ecommerce/models/chat.dart';
 import 'package:ecommerce/screens/chat_screen.dart';
 import 'package:ecommerce/services/supabase_service.dart';
 import 'package:ecommerce/services/supabase_diagnostic.dart';
+import 'package:ecommerce/widgets/shimmer_widgets.dart';
 // import 'package:timeago/timeago.dart' as timeago;
 
 class ChatListScreen extends StatefulWidget {
@@ -34,16 +36,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
     try {
       final appState = context.read<AppState>();
       final user = appState.currentUser;
-      
+
       if (user != null) {
         // Charger les chats directement sans mise à jour des noms
         final chats = await appState.getUserChats();
-        
+
         setState(() {
           _chats = chats;
           _isLoading = false;
         });
-        
+
         // Mettre à jour les noms en arrière-plan si nécessaire
         if (chats.isNotEmpty) {
           _updateChatNamesInBackground(chats);
@@ -87,22 +89,24 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
       // Vérifier la configuration
       SupabaseDiagnostic.checkConfiguration();
-      
+
       // Exécuter le diagnostic complet
       final results = await SupabaseDiagnostic.runFullDiagnostic();
-      
+
       // Afficher les résultats
       final successCount = results.values.where((result) => result).length;
       final totalCount = results.length;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Diagnostic terminé: $successCount/$totalCount tests réussis'),
-          backgroundColor: successCount == totalCount ? Colors.green : Colors.orange,
+          content: Text(
+              'Diagnostic terminé: $successCount/$totalCount tests réussis'),
+          backgroundColor:
+              successCount == totalCount ? Colors.green : Colors.orange,
           duration: const Duration(seconds: 3),
         ),
       );
-      
+
       // Si le diagnostic révèle des problèmes, recharger les chats
       if (successCount == totalCount) {
         _loadChats();
@@ -120,22 +124,26 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Future<List<Chat>> _updateChatNames(List<Chat> chats) async {
     final updatedChats = <Chat>[];
-    
+
     for (final chat in chats) {
       String customerName = chat.customerName;
       String sellerName = chat.sellerName;
-      
+
       // Fonction pour valider un UUID
       bool isValidUUID(String? id) {
         if (id == null || id.isEmpty) return false;
-        final uuidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', caseSensitive: false);
+        final uuidRegex = RegExp(
+            r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+            caseSensitive: false);
         return uuidRegex.hasMatch(id);
       }
-      
+
       // Mettre à jour les noms seulement si nécessaire
-      if ((customerName == 'Client' || customerName.isEmpty) && isValidUUID(chat.customerId)) {
+      if ((customerName == 'Client' || customerName.isEmpty) &&
+          isValidUUID(chat.customerId)) {
         try {
-          final fullName = await SupabaseService.getUserFullName(chat.customerId);
+          final fullName =
+              await SupabaseService.getUserFullName(chat.customerId);
           if (fullName != null && fullName.isNotEmpty) {
             customerName = fullName;
           }
@@ -143,34 +151,38 @@ class _ChatListScreenState extends State<ChatListScreen> {
           print('❌ [CHAT] Erreur lors de la récupération du nom du client: $e');
         }
       }
-      
-      if ((sellerName == 'Vendeur' || sellerName == 'Vendeur par défaut' || sellerName.isEmpty) && isValidUUID(chat.sellerId)) {
+
+      if ((sellerName == 'Vendeur' ||
+              sellerName == 'Vendeur par défaut' ||
+              sellerName.isEmpty) &&
+          isValidUUID(chat.sellerId)) {
         try {
           final fullName = await SupabaseService.getUserFullName(chat.sellerId);
           if (fullName != null && fullName.isNotEmpty) {
             sellerName = fullName;
           }
         } catch (e) {
-          print('❌ [CHAT] Erreur lors de la récupération du nom du vendeur: $e');
+          print(
+              '❌ [CHAT] Erreur lors de la récupération du nom du vendeur: $e');
         }
       }
-      
+
       // Créer un nouveau chat avec les noms mis à jour
       final updatedChat = chat.copyWith(
         customerName: customerName,
         sellerName: sellerName,
       );
-      
+
       updatedChats.add(updatedChat);
     }
-    
+
     return updatedChats;
   }
 
   String _formatTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}j';
     } else if (difference.inHours > 0) {
@@ -242,9 +254,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Widget _buildChatList(ThemeData theme, user) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return _buildShimmerList(theme);
     }
 
     if (_error != null) {
@@ -316,15 +326,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
         itemBuilder: (context, index) {
           final chat = _chats[index];
           final isCustomer = chat.customerId == user.id;
-          final otherUserName = isCustomer ? chat.sellerName : chat.customerName;
-          
+          final otherUserName =
+              isCustomer ? chat.sellerName : chat.customerName;
+
           return _buildChatCard(theme, chat, otherUserName, isCustomer);
         },
       ),
     );
   }
 
-  Widget _buildChatCard(ThemeData theme, Chat chat, String otherUserName, bool isCustomer) {
+  Widget _buildChatCard(
+      ThemeData theme, Chat chat, String otherUserName, bool isCustomer) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -374,7 +386,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         child: Image.network(
                           chat.productImageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
                             decoration: BoxDecoration(
                               color: theme.colorScheme.primaryContainer,
                               borderRadius: BorderRadius.circular(12),
@@ -404,7 +417,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           ),
                         ),
                         child: Icon(
-                          isCustomer ? Icons.sell_rounded : Icons.person_rounded,
+                          isCustomer
+                              ? Icons.sell_rounded
+                              : Icons.person_rounded,
                           size: 12,
                           color: theme.colorScheme.onPrimary,
                         ),
@@ -413,7 +428,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ],
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Informations du chat
                 Expanded(
                   child: Column(
@@ -443,13 +458,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 gradient: LinearGradient(
                                   colors: [
                                     theme.colorScheme.primary,
-                                    theme.colorScheme.primary.withValues(alpha: 0.8),
+                                    theme.colorScheme.primary
+                                        .withValues(alpha: 0.8),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                                    color: theme.colorScheme.primary
+                                        .withValues(alpha: 0.3),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),
@@ -467,12 +484,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      
+
                       // Nom du produit
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          color: theme.colorScheme.primaryContainer
+                              .withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -487,14 +506,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Informations du rôle et temps
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isCustomer 
+                              color: isCustomer
                                   ? theme.colorScheme.secondaryContainer
                                   : theme.colorScheme.tertiaryContainer,
                               borderRadius: BorderRadius.circular(12),
@@ -503,9 +523,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  isCustomer ? Icons.sell_rounded : Icons.person_rounded,
+                                  isCustomer
+                                      ? Icons.sell_rounded
+                                      : Icons.person_rounded,
                                   size: 14,
-                                  color: isCustomer 
+                                  color: isCustomer
                                       ? theme.colorScheme.onSecondaryContainer
                                       : theme.colorScheme.onTertiaryContainer,
                                 ),
@@ -513,7 +535,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 Text(
                                   isCustomer ? 'Vendeur' : 'Client',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: isCustomer 
+                                    color: isCustomer
                                         ? theme.colorScheme.onSecondaryContainer
                                         : theme.colorScheme.onTertiaryContainer,
                                     fontWeight: FontWeight.w600,
@@ -525,7 +547,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           ),
                           const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
@@ -533,7 +556,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             child: Text(
                               _formatTimeAgo(chat.lastMessageAt),
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
                                 fontWeight: FontWeight.w500,
                                 fontSize: 11,
                               ),
@@ -551,4 +575,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
     );
   }
+
+  Widget _buildShimmerList(ThemeData theme) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 6, // Afficher 6 cartes shimmer
+      itemBuilder: (context, index) => const ChatCardShimmer(),
+    );
+  }
+
 }

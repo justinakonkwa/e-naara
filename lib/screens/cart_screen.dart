@@ -4,6 +4,8 @@ import 'package:ecommerce/services/data_service.dart';
 import 'package:ecommerce/data/sample_data.dart';
 import 'package:ecommerce/models/cart.dart';
 import 'package:ecommerce/screens/checkout_screen.dart';
+import 'package:ecommerce/screens/categories_screen.dart';
+import 'package:ecommerce/widgets/shimmer_widgets.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -18,6 +20,7 @@ class _CartScreenState extends State<CartScreen> {
   double _shippingCost = 9.99;
   double _tax = 0.0;
   bool _showPromoInput = false;
+  bool _isLoading = true;
 
   double get _subtotal => context.watch<DataService>().cartSubtotal;
   double get _discount => _appliedPromo?.calculateDiscount(_subtotal) ?? 0.0;
@@ -65,6 +68,20 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadCartData();
+  }
+
+  Future<void> _loadCartData() async {
+    final dataService = context.read<DataService>();
+    await dataService.loadCartItems();
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dataService = context.watch<DataService>();
@@ -92,7 +109,15 @@ class _CartScreenState extends State<CartScreen> {
             ),
         ],
       ),
-      body: dataService.isCartEmpty ? _buildEmptyCart(theme) : _buildCartContent(theme),
+      body: _isLoading ? _buildLoadingCart(theme) : (dataService.isCartEmpty ? _buildEmptyCart(theme) : _buildCartContent(theme)),
+    );
+  }
+
+  Widget _buildLoadingCart(ThemeData theme) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: 3,
+      itemBuilder: (context, index) => const CartItemShimmer(),
     );
   }
 
@@ -133,7 +158,12 @@ class _CartScreenState extends State<CartScreen> {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.of(context).pop();
+                // Naviguer vers la page des catégories
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CategoriesScreen(),
+                  ),
+                );
               },
               icon: const Icon(Icons.shopping_bag_outlined),
               label: const Text('Découvrir nos produits'),
@@ -227,7 +257,7 @@ class _CartScreenState extends State<CartScreen> {
                   children: [
                     Flexible(
                       child: Text(
-                        '${item.product.price.toStringAsFixed(2)} €',
+                        item.product.formatPrice(item.product.price),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -241,7 +271,7 @@ class _CartScreenState extends State<CartScreen> {
                         child: Padding(
                           padding: const EdgeInsets.only(left: 4),
                           child: Text(
-                            '${item.product.originalPrice!.toStringAsFixed(2)} €',
+                            item.product.formatPrice(item.product.originalPrice!),
                             style: theme.textTheme.bodySmall?.copyWith(
                               decoration: TextDecoration.lineThrough,
                               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
@@ -309,7 +339,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${(item.product.price * item.quantity).toStringAsFixed(2)} €',
+                item.product.formatPrice(item.product.price * item.quantity),
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -377,7 +407,7 @@ class _CartScreenState extends State<CartScreen> {
                 elevation: 2,
               ),
               child: Text(
-                'Commander (${_total.toStringAsFixed(2)} €)',
+                'Commander (\$${_total.toStringAsFixed(2)})',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -544,7 +574,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
           Text(
-            '${amount.toStringAsFixed(2)} €',
+            '\$${amount.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
               fontSize: isTotal ? 16 : 14,
